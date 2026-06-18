@@ -18,6 +18,18 @@ scripts/            # schema.sql, seed.sql
 data/runs/          # gitignored — artifacts per run
 ```
 
+## Git Workflow
+
+Each chunk gets its own branch. Branch naming: `chunk-{N}-{short-description}`.
+
+Rules:
+- Always create the branch before starting dev work on a chunk
+- All work for a chunk stays on its branch
+- Merge to `main` only after review + all checks pass
+- Never commit chunk work directly to `main`
+
+Current branches: `chunk-1-content-ingestion`
+
 ## Dev Setup
 
 ```bash

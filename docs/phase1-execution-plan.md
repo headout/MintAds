@@ -102,46 +102,29 @@ Response (key fields):
   "descriptors": [{ "code": "...", "displayName": "...", "description": "..." }],
   "highlights": "<ul><li>...</li></ul>",     // HTML string, NOT array
   "inclusions": "<ul><li>...</li></ul>",     // HTML string, NOT array
-  "media": {
-    "productImages": [
-      { "url": "https://cdn-imgix.headout.com/...", "altText": "...", "description": "...", "credit": "..." }
-    ]
-  },
+  "imageUploads": [
+    { "url": "https://cdn-imgix.headout.com/...", "alt": "...", "keyword": "...", "title": "...", "credit": "..." }
+  ],
+  "topReviews": [
+    { "rating": 5.0, "content": "...", "nonCustomerName": "...", "sourceLanguage": "EN", "useTranslatedContent": false, "translatedContent": null }
+  ],
+  "hasFreeCancellation": true,
+  "hasSkipTheLine": true,
   "url": "/tour/7148/italy/rome/..."
 }
 
 GOTCHAS:
 - highlights/inclusions are HTML → parse <li> tags
 - summary is HTML → strip tags
-- duration is milliseconds → divide by 3600000
+- duration is milliseconds → divide by 3600000; null for most experiences — handle gracefully, don't fail
 - shortSummary can be empty string
 - use finalPrice not finalListingPrice
 - use currencyCode not currency
 - use reviewCount not ratingCount (ratingCount is always null)
-```
-
-**Reviews:**
-```
-GET https://www.headout.com/api/v2/review/tour-group/id/{tourGroupId}?limit=10
-
-Response:
-{
-  "items": [
-    {
-      "rating": 5.0,
-      "content": "Outstanding experience...",
-      "nonCustomerName": "Gabriel Craciun",
-      "sourceLanguage": "EN",
-      "useTranslatedContent": false,
-      "translatedContent": null
-    }
-  ]
-}
-
-GOTCHAS:
-- Reviews are mixed languages — filter for sourceLanguage == "EN"
-- If useTranslatedContent == true, use translatedContent instead of content
-- Response key is "items" not "reviews"
+- use imageUploads[] not media.productImages[] — imageUploads has the keyword field needed by Claude
+- topReviews (5 items) is already embedded in the main response — no second API call needed
+- review text field is content not text; reviewer is nonCustomerName; score is rating (float)
+- filter topReviews to sourceLanguage == "EN"; if useTranslatedContent == true use translatedContent
 ```
 
 ### 2. Claude API (script generation)

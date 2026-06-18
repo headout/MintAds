@@ -209,18 +209,14 @@ User fills form:
 
 **Trigger**: Orchestrator starts after run record is created.
 
-**What happens**: Two API calls to Headout's public endpoints:
+**What happens**: One API call to Headout's public endpoint (verified against real API):
 
 ```typescript
-// Call 1: Experience details
-GET https://www.headout.com/api/v3/experience/{experience_id}
-→ Returns: title, short_title, city, country, category, price, duration,
-   rating, review_count, description, descriptors[], highlights[],
-   inclusions[], media.productImages[]
-
-// Call 2: Top reviews
-GET https://www.headout.com/api/v3/experience/{experience_id}/reviews?limit=5
-→ Returns: [{ text, star_rating, reviewer_name }, ...]
+// Single call — reviews are embedded in the response as topReviews[]
+GET https://www.headout.com/api/v6/tour-groups/{tourGroupId}/
+→ Returns: name, city, country, primaryCategory, listingPrice, minDuration,
+   maxDuration, averageRating, reviewCount, summary, highlights, inclusions,
+   descriptors[], imageUploads[], topReviews[], hasFreeCancellation, hasSkipTheLine
 ```
 
 **Output**: `facts.json` stored as JSONB in `runs.facts` column AND written to `/data/runs/{ad_id}/facts.json`.
@@ -249,6 +245,8 @@ GET https://www.headout.com/api/v3/experience/{experience_id}/reviews?limit=5
   "usps": ["Skip-the-line elevator access", "Summit level included", "Expert English-speaking guide"],
   "highlights": ["Ride the elevator to the summit", "Panoramic views of Paris", "Learn the history from a local guide"],
   "inclusions": ["Skip-the-line entry", "Elevator to summit", "Professional guide", "Free cancellation"],
+  "has_free_cancellation": true,
+  "has_skip_the_line": true,
   "photos": [
     {
       "index": 0,
@@ -284,6 +282,7 @@ GET https://www.headout.com/api/v3/experience/{experience_id}/reviews?limit=5
 - API timeout → retry once after 3s → if still fails, run status = `failed`
 - Missing critical fields (no price, no photos) → run status = `failed`, error lists missing fields
 - Missing non-critical fields (no reviews) → continue with empty array, log warning
+- Null duration (`minDuration`/`maxDuration`) → normal for many experiences, not a failure — set display to `null`
 
 **Stage log entry**: `{ stage: "content_ingestion", service: "headout_api", cost_usd: 0.00 }`
 
