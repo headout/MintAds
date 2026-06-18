@@ -28,7 +28,8 @@ Rules:
 - Merge to `main` only after review + all checks pass
 - Never commit chunk work directly to `main`
 
-Current branches: `chunk-1-content-ingestion`
+Current branches: `feat/02-script-engine`
+Branch naming: `feat/{NN}-{short-description}` (e.g. `feat/02-script-engine`)
 
 ## Dev Setup
 
