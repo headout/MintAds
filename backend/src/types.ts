@@ -154,6 +154,9 @@ export interface AngleDef {
   name: string;
   description: string;
   example_line?: string | null;
+  sub_format?: string | null;   // primary UGC sub-format auto-selected for this angle
+  journey?: string | null;      // 'pre_trip' | 'in_trip' | 'both'
+  brand_lean?: string | null;   // 'headout' | 'non_headout' | 'either'
 }
 
 export interface HookDef {

@@ -5,6 +5,11 @@ import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
 import { initRemotionBundle } from './services/remotion-client';
+import generateRouter from './routes/generate';
+import statusRouter from './routes/status';
+import outputRouter from './routes/output';
+import configRouter from './routes/config';
+import runsRouter from './routes/runs';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,11 +29,12 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', ts: new Date().toISOString() });
 });
 
-// Routes (wired in later chunks)
-// app.use('/api', generateRouter);
-// app.use('/api', statusRouter);
-// app.use('/api', configRouter);
-// app.use('/api', runsRouter);
+// Routes
+app.use('/api', generateRouter);
+app.use('/api', statusRouter);
+app.use('/api', outputRouter);
+app.use('/api', configRouter);
+app.use('/api', runsRouter);
 
 app.listen(PORT, () => {
   console.log(`MintAds backend running on http://localhost:${PORT}`);

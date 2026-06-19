@@ -92,6 +92,9 @@ CREATE TABLE IF NOT EXISTS angles (
   motivation      TEXT,
   kills_objection TEXT,
   example_line    TEXT,
+  sub_format      TEXT,               -- primary UGC sub-format auto-selected by script engine
+  journey         TEXT DEFAULT 'both',-- 'pre_trip' | 'in_trip' | 'both'
+  brand_lean      TEXT DEFAULT 'either', -- 'headout' | 'non_headout' | 'either'
   sort_order      INTEGER DEFAULT 0
 );
 

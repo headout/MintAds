@@ -151,11 +151,32 @@ Each fal.ai call is a separate API call with no memory of the others. global_sty
 mechanism ensuring visual coherence across all scenes. Be specific — vague descriptions produce inconsistent results.
 
 creator_description:
-  Describe the on-screen creator with enough specificity to reproduce the SAME person across all calls.
-  Include: approximate age, apparent gender/presentation, specific clothing items and colours, accessories, energy level.
-  Derive from the selected persona and the experience's location/cultural vibe.
-  GOOD: "25-year-old solo female traveller, white linen shirt, slim-fit stone-wash jeans, small canvas daypack, warm Mediterranean tan, genuine excited energy"
-  BAD:  "young traveller in casual clothes"
+  A single reference photo is always passed as @Image1 to fal.ai. That photo is the source of truth
+  for the creator's physical appearance — face, gender presentation, approximate age, build. Do NOT invent
+  a different person. Your description must match the person in that photo.
+
+  What you MUST keep fixed (anchored to the reference photo):
+    • Apparent gender/presentation
+    • Approximate age range
+    • Build / body type
+
+  What you SHOULD vary based on the persona and experience location:
+    • Outfit and clothing items (colours, style, formality)
+    • Accessories (daypack, camera, sunglasses, hat)
+    • Energy level and camera presence
+
+  Persona → outfit/energy guide:
+    history_geeks      → smart-casual exploring gear (chinos, linen shirt), calm and reverent energy
+    art_culture_lovers → tasteful, slightly styled (clean blouse or button-down), thoughtful and observant
+    first_timers       → practical tourist look (comfortable sneakers, light jacket), excited and wide-eyed
+    couples            → relaxed date-day outfit, warm and joyful energy (creator speaks as one of a pair)
+    solo_travellers    → lightweight daypack, casual adventure wear, independent and confident
+    families           → comfortable practical outfit, warm inclusive energy
+    luxe_lovers        → elevated minimal outfit (quality basics, no logos), effortlessly polished
+    thrill_seekers     → athletic / adventure gear, high energy, bold presence
+
+  GOOD: "25-year-old woman, white linen shirt, slim-fit jeans, small canvas daypack, warm Mediterranean tan — same face and build as the reference photo, excited explorer energy"
+  BAD:  "rugged 40-year-old man in hiking boots" ← invents a different person than the reference photo
 
 aesthetic:
   One sentence covering the shared visual style for ALL scenes. Include: camera style, lighting quality, colour temperature, mood.
@@ -277,12 +298,15 @@ function buildUserMessage(
   hookDef: HookDef,
 ): string {
   const personaDescriptions: Record<string, string> = {
-    solo: 'Solo Traveller — personal discovery, "I" language, independent explorer energy',
-    couple: 'Couple — shared romantic moments, "we" language, adventurous or intimate',
-    art_enthusiast: 'Art Enthusiast — aesthetic depth, artistic appreciation, visual beauty',
-    cultural: 'Cultural Traveller — historical significance, authentic local perspective',
-    family: 'Family — safety, ease, kid-friendly framing, value for money',
-    budget: 'Budget Traveller — smart spending, value framing, cost-per-memory',
+    // v2 personas
+    history_geeks:      'History Geeks — depth, the real story, "stand where it happened". Values accuracy and insider detail. Use "I" language with reverence.',
+    art_culture_lovers: 'Art & Culture Lovers — beauty, the masterpiece moment, meaning. Aesthetic depth and artistic appreciation. Evocative, sensory language.',
+    first_timers:       'First-Timers — see the must-dos, don\'t mess it up, de-risk. Practical tone, crowd-sourced confidence. Reassuring and clear.',
+    couples:            'Couples — a shared moment, romance, the photo. Emotion-led, "we" language, aspirational and intimate.',
+    solo_travellers:    'Solo Travellers — discovery, freedom, the story to tell. Social currency and personal narrative. "I" language, adventurous.',
+    families:           'Families — everyone happy, no stress, value, safety. Practical framing, kid-friendly. Reassuring and inclusive.',
+    luxe_lovers:        'Luxe Lovers — exclusivity, status, the best, seamless. Identity signaling and self-enhancement. Elevated, confident tone.',
+    thrill_seekers:     'Thrill Seekers — adrenaline, novelty, "I actually did that". Emotion + social currency. High energy, bold language.',
   };
 
   const journeyDescriptions: Record<string, string> = {
@@ -305,6 +329,7 @@ function buildUserMessage(
     `- Brand Mode: ${brandDescriptions[userInput.brand] ?? userInput.brand}`,
     `- Angle: ${angleDef.id} — ${angleDef.name}: ${angleDef.description}`,
     ...(angleDef.example_line ? [`  Example line: "${angleDef.example_line}"`] : []),
+    ...(angleDef.sub_format ? [`  UGC sub-format (auto-selected for this angle): ${angleDef.sub_format} — let this shape the overall creative structure and pacing.`] : []),
     `- Hook: ${hookDef.id} — ${hookDef.name}: ${hookDef.description}`,
     `  Hook template: "${hookDef.template}"`,
     `- Video Format: ${userInput.video_format}`,
