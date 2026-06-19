@@ -124,10 +124,11 @@ export interface ClaimEntry {
 }
 
 export interface ClaimReport {
+  ad_id?: string;
   claims: ClaimEntry[];
-  total?: number;
-  verified?: number;
-  unverified?: number;
+  total_claims?: number;
+  verified_claims?: number;
+  unverified_claims?: number;
 }
 
 /** Only the fields the Output page reads; the API returns more. */
