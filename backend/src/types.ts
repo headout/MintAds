@@ -51,6 +51,12 @@ export interface UserInput {
 
 // --- Script Engine types ---
 
+export interface GlobalStyle {
+  creator_description: string; // specific enough to reproduce the same person across 3 Higgsfield calls
+  aesthetic: string;           // shared visual style prefix for all scene prompts
+  background_music_volume: number[]; // per non-cta scene (hook, body, payoff), 0.0–1.0
+}
+
 export interface SceneJson {
   scene_id: number;
   beat: 'hook' | 'body' | 'payoff' | 'cta';
@@ -82,6 +88,7 @@ export interface ScriptJson {
   video_script: {
     scenes: SceneJson[];
     total_duration_sec: number;
+    global_style: GlobalStyle;
   };
   audio_script: {
     vo_segments: VoSegment[];

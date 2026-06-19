@@ -151,6 +151,12 @@ async function main() {
   console.log('  reviews :', script.end_card.review_count_display);
   console.log('  cta     :', script.end_card.cta_text);
 
+  const gs = script.video_script.global_style;
+  console.log('\nglobal_style:');
+  console.log('  creator :', gs.creator_description);
+  console.log('  aesthetic:', gs.aesthetic);
+  console.log('  bg_music_vol:', gs.background_music_volume);
+
   console.log('\nclaim_sources:');
   for (const [claim, source] of Object.entries(script.claim_sources)) {
     console.log(`  "${claim}"  →  ${source}`);

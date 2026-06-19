@@ -11,6 +11,7 @@ import type {
   ScriptEngineResult,
   AngleDef,
   HookDef,
+  GlobalStyle,
 } from './types';
 
 const DATA_RUNS_DIR = path.resolve(__dirname, '../../data/runs');
@@ -69,6 +70,31 @@ VO SEGMENTS:
 - Sum of vo_segment target_duration_sec must be 12–22s
 - Sum of all scene duration_sec must be 15–25s
 
+GLOBAL STYLE (required — consumed by the video engine for ALL 3 Higgsfield calls):
+Each Higgsfield scene is a separate API call with no memory of the others. global_style is the
+only mechanism ensuring visual coherence across all segments. Be specific.
+
+- creator_description: describe the on-screen creator with enough specificity to reproduce the
+  SAME person across 3 independent calls. Include: approximate age, apparent gender, specific
+  clothing items and colours, accessories, energy level. Derive from the persona and experience
+  location/vibe.
+  GOOD: "25-year-old solo female traveller, white linen shirt, slim-fit stone-wash jeans,
+        small canvas daypack, warm Mediterranean tan, genuine excited energy"
+  BAD:  "young traveller in casual clothes"
+
+- aesthetic: one sentence covering the shared visual style for all scenes. Include: camera
+  style, lighting quality and colour temperature, mood. This string is prepended verbatim to
+  every Higgsfield prompt.
+  GOOD: "UGC handheld 9:16, warm golden-hour Mediterranean light, slightly shaky camera,
+        cinematic but authentic, continuous visual theme across all cuts"
+  BAD:  "nice video"
+
+- background_music_volume: array of floats (0.0–1.0), one entry per non-cta scene in order
+  [hook, body, payoff]. Higgsfield bakes background music into each clip; Remotion uses these
+  values to duck the clip audio under the ElevenLabs VO.
+  Rule of thumb: 0.15–0.25 for hook/body (VO is dominant), 0.30–0.45 for payoff (music
+  can breathe). Must have exactly 3 values.
+
 OUTPUT SCHEMA (output this exact structure, nothing else):
 {
   "ad_id": "HDO_META_{City}_{AngleId}_{HookId}_UGC_EN_v01",
@@ -82,6 +108,11 @@ OUTPUT SCHEMA (output this exact structure, nothing else):
     "video_format": "string"
   },
   "video_script": {
+    "global_style": {
+      "creator_description": "specific creator description — age, gender, exact clothing, accessories, energy",
+      "aesthetic": "shared visual style sentence for all Higgsfield calls",
+      "background_music_volume": [0.2, 0.2, 0.4]
+    },
     "scenes": [
       {
         "scene_id": 1,
@@ -294,6 +325,27 @@ function validateStructural(script: ScriptJson): string[] {
 
   if (!script.claim_sources || Object.keys(script.claim_sources).length === 0)
     v.push('claim_sources is empty or missing');
+
+  // global_style
+  const gs = script.video_script?.global_style as GlobalStyle | undefined;
+  if (!gs) {
+    v.push('video_script.global_style is missing');
+  } else {
+    if (!gs.creator_description || gs.creator_description.trim().length < 20)
+      v.push('global_style.creator_description is missing or too vague (min 20 chars)');
+    if (!gs.aesthetic || gs.aesthetic.trim().length < 10)
+      v.push('global_style.aesthetic is missing or too vague (min 10 chars)');
+    if (!Array.isArray(gs.background_music_volume)) {
+      v.push('global_style.background_music_volume must be an array');
+    } else {
+      if (gs.background_music_volume.length !== 3)
+        v.push(`global_style.background_music_volume must have exactly 3 values (hook, body, payoff), got ${gs.background_music_volume.length}`);
+      for (const val of gs.background_music_volume) {
+        if (typeof val !== 'number' || val < 0 || val > 1)
+          v.push(`global_style.background_music_volume contains invalid value "${val}" — must be 0.0–1.0`);
+      }
+    }
+  }
 
   return v;
 }
