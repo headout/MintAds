@@ -63,25 +63,28 @@ Stability: 0.35
 Similarity boost: 0.75
 ```
 
-### Higgsfield (default params)
+### fal.ai Seedance (default params)
 
 ```
-Model: "seedance-v2.0-i2v"
-Quality: "high" for hook scene, "basic" for body/payoff/experience_detail scenes
-Aspect ratio: "9:16" (master — Remotion crops for others)
-generate_audio: false
-Duration: 4–10s per scene (dynamic — set by script.json per scene)
-images_list: 1–2 photos per scene (venue photos from facts.photos[]; creator identity via SoulId)
+Endpoint:
+  lip_sync: true  → bytedance/seedance-2.0/fast/reference-to-video
+  ugc_creator (no lip_sync) → bytedance/seedance-2.0/fast/reference-to-video
+  b_roll | pov | experience_detail → bytedance/seedance-2.0/fast/image-to-video
+
+Aspect ratio: "9:16" (master — Remotion crops for 1:1, 16:9)
+generate_audio: true for lip_sync scenes (needed for mouth movement); false for all others
+Duration: 4–10s per scene (string, set by script.json per scene)
+image_urls: venue photos from facts.photos[photo_reference_indices] (1–2 per scene)
+audio_urls: [voSegment.filePath] for lip_sync scenes only
 ```
 
-### Higgsfield SoulId (creator identity)
+### Creator consistency (no SoulId)
 
 ```
-SoulId is a pre-registered creator reference used to reproduce the same person across all Higgsfield calls.
-Setup: store 2–3 reference creator images in static/creators/{creator_id}/
-On server start: call higgsfield.createSoulId() → cache soul_id in DB config table under key "higgsfield_soul_id"
-Pass soul_id in every Seedance call where scene.shot_type === "ugc_creator"
-Skip soul_id for b_roll, pov, experience_detail scenes (no creator in frame)
+Creator photo stored at static/creators/ — URL set via CREATOR_PHOTO_URL env var.
+For ugc_creator scenes (lip_sync: true or false): creator photo prepended as first entry in image_urls, referenced as @Image1 in prompt.
+For b_roll | pov | experience_detail: creator photo omitted entirely.
+No SoulId or API registration required — consistency is maintained via the same reference photo + creator_description in the global prompt prefix.
 ```
 
 ---
@@ -291,6 +294,8 @@ Requires: Node 16+, headless Chrome (Remotion installs this)
 **Output**: `ScriptJson` (validated) + `ClaimReport`
 **Dependencies**: Chunk 1 (needs facts.json)
 
+**`lip_sync` flag**: Every non-cta scene must include `lip_sync: boolean`. Claude sets it `true` only when `shot_type === "ugc_creator"` AND the creator is speaking directly to camera. Reaction/walking ugc_creator scenes get `lip_sync: false`. Validator enforces: `lip_sync` must be present on all scenes; `lip_sync: true` is only valid on `ugc_creator` shot type.
+
 #### Key script.json design decisions (updated)
 
 **Dynamic scene count**: Claude decides 4 or 5 content scenes (+ 1 end card) based on what the experience needs. No fixed 3-scene structure. Total ad: 30–40s.
@@ -324,13 +329,20 @@ Requires: Node 16+, headless Chrome (Remotion installs this)
 ---
 
 ### Chunk 3: Video Engine
-**Scope**: `higgsfield-client.ts` module. Takes a scene object + global_style + facts metadata. Assembles the full Higgsfield prompt (global prefix + scene direction). Calls Higgsfield SDK `subscribe()` with Seedance 2.0 I2V. Waits for completion via built-in polling. Downloads resulting MP4 to local filesystem. Returns file path + actual duration. Includes retry logic (1 retry per scene). Sanity check (file exists, non-zero bytes).
+**Scope**: `fal-client.ts` module. Takes a scene object + global_style + facts metadata + optional VO segment file path. Assembles the full fal.ai prompt (global prefix + scene direction + lip-sync instruction if applicable). Calls fal.ai SDK `fal.subscribe()` with Seedance 2.0. Waits for completion via built-in polling. Downloads resulting MP4 to local filesystem. Returns file path + actual duration. Includes retry logic (1 retry per scene). Sanity check (file exists, non-zero bytes).
 
-The orchestrator calls this N times in parallel (one per non-cta scene) via `Promise.allSettled`. N is dynamic (4–5) based on what `script.json` produced.
+The orchestrator calls this in two waves (see Chunk 6): non-lip-sync scenes fire in parallel with audio generation; lip-sync scenes fire only after all VO segments are ready.
 
-**Input**: `{ scene, global_style, facts, soul_id? }` per scene — photo URLs resolved from `scene.photo_reference_indices`
+**Input**: `{ scene, global_style, facts, voSegmentPath?: string }` per scene — `voSegmentPath` is the local ElevenLabs MP3 path, passed only for `lip_sync: true` scenes
 **Output**: `{ file_path, duration_sec, scene_id, beat, shot_type }` per clip
-**Dependencies**: Chunk 2 (needs script.json for visual_direction, global_style, shot_type, photo_reference_indices), Chunk 1 (needs facts.json for photo URLs)
+**Dependencies**: Chunk 2 (needs script.json). Lip-sync scenes additionally depend on Chunk 4 (need VO segment before calling fal.ai).
+
+**Routing logic by `lip_sync` + `shot_type`**:
+- `lip_sync: true` → `reference-to-video`, `audio_urls: [voSegmentPath]`, `generate_audio: true`
+- `ugc_creator` + `lip_sync: false` → `reference-to-video`, no audio_urls, `generate_audio: false`
+- `b_roll | pov | experience_detail` → `image-to-video`, `generate_audio: false`
+
+**Prompt construction**: `@Audio1` reference line added only when `lip_sync: true`. Creator instruction changes: "lip movements MUST match @Audio1" vs "natural reactions only — no speaking".
 
 #### Creator consistency — SoulId
 
@@ -385,31 +397,44 @@ All scenes share the same visual theme and color grade to cut together seamlessl
 ---
 
 ### Chunk 4: Audio Engine
-**Scope**: `elevenlabs-client.ts` module. Takes full VO text (concatenated from vo_segments). Calls ElevenLabs `textToSpeech.convert()`. Writes audio stream to MP3 file. Gets actual duration via ffprobe. Sanity check (file exists, non-zero bytes, duration within ±5s of target). Returns file path + duration.
+**Scope**: `elevenlabs-client.ts` module. Generates one ElevenLabs TTS call **per `vo_segment`** (N parallel calls). Each segment's text gets SSML `<break>` tags appended using `pause_after_sec` from script.json. Writes each audio stream to its own MP3 file (`vo_001.mp3`, `vo_002.mp3`, …). Gets actual duration of each file via ffprobe. Sanity checks per file (exists, non-zero bytes, duration within ±3s of target). Returns array of `{ scene_id, file_path, duration_sec }`.
 
-Runs in parallel with Chunk 3 (video) — both triggered after script validation passes.
+Runs as **Step 1** of the video+audio pipeline — in parallel with non-lip-sync video generation. Lip-sync video generation (Chunk 3) must wait for all segments to complete.
 
-**Input**: `script.audio_script.vo_segments[].vo_text` concatenated
-**Output**: `{ file_path, duration_sec }`
-**Dependencies**: Chunk 2 (needs script.json for VO text)
+**Input**: `script.audio_script.vo_segments[]` — one entry per non-cta scene
+**Output**: `VoSegmentResult[]` — `{ scene_id, file_path, duration_sec }` per segment
+**Dependencies**: Chunk 2 (needs script.json for VO text + pause_after_sec)
+
+**SSML breaks**: ElevenLabs `eleven_multilingual_v2` supports `<break time="Xms"/>`. Insert at end of each segment text using `segment.pause_after_sec` (converted to ms) to create natural beat-boundary pauses without silence gaps in the final audio layering.
 
 ---
 
 ### Chunk 5: Assembly (Remotion)
-**Scope**: Remotion project setup. `AdComposition.tsx` React component (sequences video clips + layers VO audio + adds text overlays + appends branded end card). `EndCard.tsx` component (price, rating, CTA, logo). `remotion-client.ts` module that bundles once at startup and calls `renderMedia()` per aspect ratio. Handles 9:16 master + 1:1 + 16:9 via width/height overrides. Downloads remote video clip URLs to local if needed. Outputs final MP4 files.
+**Scope**: Remotion project setup. `AdComposition.tsx` React component sequences video clips (ALL muted via `volume={0}`) + layers each ElevenLabs VO segment as a separate `<Audio>` component at its correct scene timestamp + adds text overlays + appends branded end card. `EndCard.tsx` component (price, rating, CTA, logo). `remotion-client.ts` module that bundles once at startup and calls `renderMedia()` per aspect ratio. Handles 9:16 master + 1:1 + 16:9 via width/height overrides. Outputs final MP4 files.
 
-**Input**: video clips[] + vo_audio file + script.json (overlays, end card data) + format selection
+**Input**: `clips[]` + `voSegments[]` (one per scene, with `scene_id` + `filePath` + `durationSec`) + `script.json` (overlays, end card data) + format selection
 **Output**: Final MP4 files (1–3 depending on format selection)
-**Dependencies**: Chunks 3 + 4 (needs video clips + VO audio)
+**Dependencies**: Chunks 3 + 4 (needs video clips + all VO segment files)
+
+**Audio layering**: `voSegments` are ordered by `scene_id`. Each is wrapped in `<Sequence from={cumulativeSceneStartFrame}>` so the audio lines up precisely with its corresponding video clip. All clip audio is muted — consistent voice quality across all scenes regardless of whether a clip is lip-synced or b-roll.
 
 ---
 
 ### Chunk 6: Orchestrator + Cost Tracking
-**Scope**: `orchestrator.ts` — the `runPipeline()` function that wires Chunks 1–5 in sequence (ingestion → script → parallel(video, audio) → assembly → export). Status updates to DB at each stage transition. Cost tracking: wrapper functions that log every external API call to `stage_logs` table with cost_usd. Ad ID generation from naming convention. Error handling: catch at each stage, update run status to 'failed' with error message. Export: save all artifacts to filesystem, insert asset records, compute total cost.
+**Scope**: `orchestrator.ts` — the `runPipeline()` function that wires Chunks 1–5. Status updates to DB at each stage transition. Cost tracking: wrapper functions that log every external API call to `stage_logs` table with cost_usd. Ad ID generation from naming convention. Error handling: catch at each stage, update run status to 'failed' with error message. Export: save all artifacts to filesystem, insert asset records, compute total cost.
 
 **Input**: `UserInput` from API request
 **Output**: Completed run with all files in `/data/runs/{ad_id}/`
 **Dependencies**: All chunks 1–5
+
+**Pipeline sequencing** (replaces the old simple `Promise.all([video, audio])`):
+```
+ingestion → script → Step 1: Promise.all([generateAllVoSegments, generateVideoClips(nonLipSync)])
+                  → Step 2: generateVideoClips(lipSyncScenes, voSegments)   ← sequential after Step 1
+                  → Assembly (all clips + all voSegments)
+                  → Export
+```
+Step 1 fires non-lip-sync video generation and audio generation in parallel — both start immediately after script validation. Step 2 fires lip-sync video generation only after `voSegments` resolves, passing the matching `voSegmentPath` per scene. This adds ~5s of latency vs the old parallel approach but is necessary for lip-sync. Effective wall time is unchanged because video generation (~90s) is always the bottleneck.
 
 ---
 

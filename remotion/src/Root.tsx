@@ -1,10 +1,12 @@
+import React from 'react';
 import { Composition } from 'remotion';
 import { AdComposition, AdProps } from './AdComposition';
 
 export function RemotionRoot() {
   const defaultProps: AdProps = {
     clips: [],
-    voAudioSrc: '',
+    bgMusicSrc: '',
+    bgMusicVolume: 0.12,
     textOverlays: [],
     endCard: {
       priceDisplay: '€45',

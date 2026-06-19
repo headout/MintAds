@@ -54,8 +54,8 @@ export interface UserInput {
 export type ShotType = 'ugc_creator' | 'b_roll' | 'pov' | 'experience_detail';
 
 export interface GlobalStyle {
-  creator_description: string; // specific enough to reproduce the same person via SoulId across all Higgsfield calls
-  aesthetic: string;           // shared visual style prefix prepended to every scene's visual_direction
+  creator_description: string; // specific enough to reproduce the same person across all fal.ai calls
+  aesthetic: string;           // shared visual style prefix prepended to every fal.ai scene prompt
   background_music_volume: number[]; // one float (0.0–1.0) per non-cta scene, in scene order
 }
 
@@ -63,6 +63,7 @@ export interface SceneJson {
   scene_id: number;
   beat: 'hook' | 'body' | 'payoff' | 'cta';
   shot_type: ShotType;
+  lip_sync: boolean; // true only when shot_type=ugc_creator AND creator speaks directly to camera
   duration_sec: number;
   visual_direction: string;
   text_overlay: string | null;
@@ -71,10 +72,11 @@ export interface SceneJson {
 
 export interface VoSegment {
   scene_id: number;
-  beat: string;
+  beat: 'hook' | 'body' | 'payoff';
   vo_text: string;
   target_duration_sec: number;
   pacing: string;
+  pause_after_sec?: number; // natural beat-boundary pause inserted as SSML <break> by audio engine
 }
 
 export interface ScriptJson {
@@ -96,6 +98,7 @@ export interface ScriptJson {
   audio_script: {
     vo_segments: VoSegment[];
     tone: string;
+    delivery_style: string; // fed to ElevenLabs voice settings context; describes pacing/energy
     total_duration_target_sec: number;
   };
   end_card: {
@@ -137,6 +140,13 @@ export interface VideoClipResult {
   file_path: string;
   remote_url: string;
   duration_sec: number;
+}
+
+export interface VoSegmentResult {
+  scene_id: number;
+  file_path: string;   // local path: /data/runs/{adId}/vo_001.mp3
+  duration_sec: number;
+  characters: number;
 }
 
 export interface AngleDef {

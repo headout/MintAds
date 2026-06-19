@@ -1,3 +1,4 @@
+import React from 'react';
 import { AbsoluteFill } from 'remotion';
 
 export interface EndCardProps {

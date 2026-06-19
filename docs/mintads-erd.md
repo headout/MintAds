@@ -324,8 +324,9 @@ GET https://www.headout.com/api/v6/tour-groups/{tourGroupId}/
         "scene_id": 1,
         "beat": "hook",
         "shot_type": "ugc_creator",
+        "lip_sync": true,
         "duration_sec": 5,
-        "visual_direction": "Detailed Higgsfield I2V direction...",
+        "visual_direction": "Creator talks directly to camera outside the Colosseum — punchy opener...",
         "text_overlay": "They waited 3 hours.",
         "photo_reference_indices": [0]
       },
@@ -333,6 +334,7 @@ GET https://www.headout.com/api/v6/tour-groups/{tourGroupId}/
         "scene_id": 2,
         "beat": "body",
         "shot_type": "b_roll",
+        "lip_sync": false,
         "duration_sec": 9,
         "visual_direction": "Slow tracking shot through the Colosseum arena floor...",
         "text_overlay": null,
@@ -342,6 +344,7 @@ GET https://www.headout.com/api/v6/tour-groups/{tourGroupId}/
         "scene_id": 3,
         "beat": "body",
         "shot_type": "pov",
+        "lip_sync": false,
         "duration_sec": 8,
         "visual_direction": "POV handheld — walking through the underground hypogeum...",
         "text_overlay": null,
@@ -351,8 +354,9 @@ GET https://www.headout.com/api/v6/tour-groups/{tourGroupId}/
         "scene_id": 4,
         "beat": "payoff",
         "shot_type": "ugc_creator",
+        "lip_sync": true,
         "duration_sec": 7,
-        "visual_direction": "Creator at the arena floor edge, turning to camera with genuine awe...",
+        "visual_direction": "Creator turns to camera at arena floor edge with genuine excitement...",
         "text_overlay": "Worth every cent.",
         "photo_reference_indices": [0]
       },
@@ -360,6 +364,7 @@ GET https://www.headout.com/api/v6/tour-groups/{tourGroupId}/
         "scene_id": 5,
         "beat": "cta",
         "shot_type": "experience_detail",
+        "lip_sync": false,
         "duration_sec": 4,
         "visual_direction": "",
         "text_overlay": null,
@@ -370,12 +375,13 @@ GET https://www.headout.com/api/v6/tour-groups/{tourGroupId}/
   },
   "audio_script": {
     "vo_segments": [
-      { "scene_id": 1, "beat": "hook", "vo_text": "...", "target_duration_sec": 5, "pacing": "fast, punchy" },
-      { "scene_id": 2, "beat": "body", "vo_text": "...", "target_duration_sec": 9, "pacing": "building" },
-      { "scene_id": 3, "beat": "body", "vo_text": "...", "target_duration_sec": 8, "pacing": "conversational" },
+      { "scene_id": 1, "beat": "hook", "vo_text": "...", "target_duration_sec": 5, "pacing": "fast, punchy", "pause_after_sec": 0.3 },
+      { "scene_id": 2, "beat": "body", "vo_text": "...", "target_duration_sec": 9, "pacing": "building", "pause_after_sec": 0.2 },
+      { "scene_id": 3, "beat": "body", "vo_text": "...", "target_duration_sec": 8, "pacing": "conversational", "pause_after_sec": 0.3 },
       { "scene_id": 4, "beat": "payoff", "vo_text": "...", "target_duration_sec": 7, "pacing": "confident" }
     ],
     "tone": "energetic, conversational, UGC creator voice",
+    "delivery_style": "UGC creator — conversational, not radio-announcer. Slight breathiness. Natural mid-sentence pauses.",
     "total_duration_target_sec": 29
   },
   "end_card": {
@@ -435,6 +441,7 @@ Three checks run in sequence. Any violation triggers a retry with violations app
 - Non-cta content total: 26–36s
 - Total VO duration: 26–36s
 - Each scene has: `scene_id`, `beat`, `shot_type` (valid enum), `duration_sec > 0`, `visual_direction` (non-cta)
+- `lip_sync` is a boolean present on every scene; `true` only when `shot_type === "ugc_creator"` AND creator is speaking directly to camera; `false` for cta, b_roll, pov, experience_detail, and ugc_creator reaction scenes
 - `photo_reference_indices` is an array; each index in range 0..(facts.photos.length - 1); `[]` for cta
 - `background_music_volume` length == non-cta scene count; all values 0.0–1.0
 - `end_card` has `price_display`, `rating_display`, `cta_text`
@@ -509,37 +516,58 @@ async function generateAndValidateScript(
 
 **SDK**: `@fal-ai/client` — `fal.subscribe()` handles polling internally. Auth via `FAL_KEY` env var.
 
-#### Endpoint selection by shot_type
+#### Endpoint selection by shot_type + lip_sync
 
-| shot_type | Endpoint | image input | Creator in frame? |
-|---|---|---|---|
-| `ugc_creator` | `bytedance/seedance-2.0/fast/reference-to-video` | `image_urls[]` — creator photo + venue photos | Yes (via @Image1) |
-| `b_roll` | `bytedance/seedance-2.0/fast/image-to-video` | `image_url` — single venue photo | No |
-| `pov` | `bytedance/seedance-2.0/fast/image-to-video` | `image_url` — single venue photo | No |
-| `experience_detail` | `bytedance/seedance-2.0/fast/image-to-video` | `image_url` — single venue photo | No |
+| shot_type | lip_sync | Endpoint | image input | audio input | Creator in frame? |
+|---|---|---|---|---|---|
+| `ugc_creator` | `true` | `bytedance/seedance-2.0/fast/reference-to-video` | `image_urls[]` — venue photos | `audio_urls[0]` — ElevenLabs segment MP3 | Yes — speaking to camera, lip-synced |
+| `ugc_creator` | `false` | `bytedance/seedance-2.0/fast/reference-to-video` | `image_urls[]` — venue photos | none | Yes — reacting, not speaking |
+| `b_roll` | `false` | `bytedance/seedance-2.0/fast/image-to-video` | `image_url` — single venue photo | none | No |
+| `pov` | `false` | `bytedance/seedance-2.0/fast/image-to-video` | `image_url` — single venue photo | none | No |
+| `experience_detail` | `false` | `bytedance/seedance-2.0/fast/image-to-video` | `image_url` — single venue photo | none | No |
+
+**`generate_audio`**: `true` for `lip_sync === true` scenes (Seedance uses the audio to drive mouth movements); `false` for all others. Remotion always mutes embedded audio from clips regardless — all audible sound comes exclusively from ElevenLabs VO segments.
 
 #### Creator consistency
 
 No SoulId. Creator photo is stored at `static/creators/` and its URL set via `CREATOR_PHOTO_URL` env var.
 For `ugc_creator` scenes, it is always prepended as the first entry in `image_urls` (referenced as `@Image1` in the prompt). For all other shot types, the creator photo is omitted entirely.
 
+#### Lip-sync scenes — audio reference
+
+For scenes where `lip_sync === true`, the corresponding ElevenLabs VO segment (already generated in Step 1) is passed as `audio_urls: [voSegment.file_path]` → referenced as `@Audio1` in the prompt. Seedance uses this audio to drive the creator's mouth movements. `generate_audio` is set to `true` so Seedance embeds audio in the clip output — but this embedded audio is discarded at assembly (Remotion mutes all clips). The embedded audio is produced solely to enable lip-sync generation; the ElevenLabs original is what the viewer actually hears.
+
 #### Prompt structure
 
-Every `@ImageN` included in `image_urls` MUST be explicitly referenced in the prompt text — unused references confuse the model.
+Every `@ImageN` and `@Audio1` included in `image_urls` / `audio_urls` MUST be explicitly referenced in the prompt text — unused references confuse the model.
 
-**ugc_creator** (reference-to-video):
+**ugc_creator, lip_sync: true** (reference-to-video + audio):
 ```
 @Image1 is the creator — maintain their exact appearance (face, hair, outfit, body type) throughout.
 @Image2 shows: {venue_photo.keyword}.
-@Image3 shows: {venue_photo.keyword}.   ← if 2 venue photos
+@Audio1 is the creator's voiceover — lip-sync the creator's mouth to this audio exactly.
 
 {global_style.aesthetic}.
 Creator: {global_style.creator_description}.
 Location: {facts.city} — {facts.title}.
+Creator speaks directly to camera. Lip movements MUST match @Audio1.
 Do NOT embed any text, captions, subtitles, titles, or watermarks in the frame.
-No speech or lip-sync audio. Silent video only.
-Creator shows only natural authentic human reactions — genuine awe, wonder, excitement.
+All scenes share the same visual theme and color grade to cut together seamlessly.
+---
+{scene.visual_direction}
+```
+
+**ugc_creator, lip_sync: false** (reference-to-video, no audio):
+```
+@Image1 is the creator — maintain their exact appearance (face, hair, outfit, body type) throughout.
+@Image2 shows: {venue_photo.keyword}.
+
+{global_style.aesthetic}.
+Creator: {global_style.creator_description}.
+Location: {facts.city} — {facts.title}.
+Creator is visible but NOT speaking. Natural authentic reactions only — genuine awe, wonder, walking.
 No winking, no exaggerated gestures, no theatrical expressions.
+Do NOT embed any text, captions, subtitles, titles, or watermarks in the frame.
 All scenes share the same visual theme and color grade to cut together seamlessly.
 ---
 {scene.visual_direction}
@@ -551,8 +579,8 @@ All scenes share the same visual theme and color grade to cut together seamlessl
 
 {global_style.aesthetic}.
 Location: {facts.city} — {facts.title}.
+No person in frame. Cinematic footage only.
 Do NOT embed any text, captions, subtitles, titles, or watermarks in the frame.
-No speech or lip-sync audio. Silent video only.
 All scenes share the same visual theme and color grade to cut together seamlessly.
 ---
 {scene.visual_direction}
@@ -561,19 +589,32 @@ All scenes share the same visual theme and color grade to cut together seamlessl
 #### Key input params
 
 ```typescript
-// reference-to-video (ugc_creator scenes)
+// reference-to-video, lip_sync: true (ugc_creator speaking to camera)
 {
-  prompt: fullPrompt,          // includes @Image1, @Image2... labels
+  prompt: fullPrompt,          // includes @Image1, @Image2..., @Audio1
   image_urls: string[],        // [creator_photo_url, ...venue_photo_urls]
+  audio_urls: [voSegment.filePath],  // ElevenLabs segment MP3 for this scene
   resolution: "720p",
   duration: String(scene.duration_sec),  // string "4"–"15", NOT a number
   aspect_ratio: "9:16",
-  generate_audio: false,
+  generate_audio: true,        // Seedance needs this to drive lip-sync; embedded audio is muted at assembly
   bitrate_mode: "standard",
-  end_user_id: "mintads-headout",        // required for early-access endpoint
+  end_user_id: "mintads-headout",
 }
 
-// image-to-video (all other shot types)
+// reference-to-video, lip_sync: false (ugc_creator reacting, not speaking)
+{
+  prompt: fullPrompt,          // includes @Image1, @Image2... only
+  image_urls: string[],        // [creator_photo_url, ...venue_photo_urls]
+  resolution: "720p",
+  duration: String(scene.duration_sec),
+  aspect_ratio: "9:16",
+  generate_audio: false,
+  bitrate_mode: "standard",
+  end_user_id: "mintads-headout",
+}
+
+// image-to-video (b_roll, pov, experience_detail)
 {
   prompt: fullPrompt,
   image_url: string,           // single venue photo URL (not an array)
@@ -603,88 +644,96 @@ If `reference-to-video` returns a 403 (early-access gate), the scene retries wit
 
 ---
 
-### 3.4 Audio Engine (Backend → ElevenLabs SDK → VO Audio)
+### 3.4 Audio Engine (Backend → ElevenLabs SDK → Per-Segment VO Files)
 
-**Trigger**: Script validated successfully. Runs in PARALLEL with Video Engine.
+**Trigger**: Script validated successfully. Runs as **Step 1** of the video+audio pipeline — in parallel with non-lip-sync video generation, but lip-sync video generation must wait for all VO segments to complete.
 
-**What happens**: One ElevenLabs call generates the complete VO as a single continuous audio file.
+**What happens**: N parallel ElevenLabs calls — one per `vo_segment` (one per non-cta scene). Each segment is saved as a separate MP3. Segments are then fed into Seedance as `@Audio1` for lip-sync scenes, and layered individually in Remotion at assembly.
+
+**Why per-segment instead of single VO**: Lip-sync scenes require the audio file to be available *before* Seedance video generation begins. A single concatenated VO cannot be split after the fact for per-scene audio reference. Per-segment also gives Remotion precise timestamp control for audio layering.
 
 ```typescript
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 
-const elevenlabs = new ElevenLabsClient({
-  apiKey: process.env.ELEVENLABS_API_KEY
-});
+const elevenlabs = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_API_KEY });
 
-// Hardcoded for hackathon — Gokul picks during manual testing tonight
 const VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'JBFqnCBsd6RMkjVDRZzb';
 const MODEL_ID = 'eleven_multilingual_v2';
 
-async function generateVoiceover(
-  script: ScriptJson,
-  runId: number,
-  adId: string
-): Promise<VoiceoverResult> {
-  await updateStageLog(runId, adId, 'audio_gen', 'in_progress');
-
-  // Concatenate all VO segments into one flowing text
-  // The script engine wrote them as beat-aware segments with natural pacing cues
-  const fullVoText = script.audio_script.vo_segments
-    .map(seg => seg.vo_text)
-    .join(' ');
+async function generateVoSegment(
+  segment: VoSegment,
+  adId: string,
+  runId: number
+): Promise<VoSegmentResult> {
+  // Insert SSML break after segment text using pause_after_sec
+  const textWithBreak = segment.pause_after_sec
+    ? `${segment.vo_text} <break time="${Math.round(segment.pause_after_sec * 1000)}ms"/>`
+    : segment.vo_text;
 
   const audio = await elevenlabs.textToSpeech.convert(VOICE_ID, {
-    text: fullVoText,
+    text: textWithBreak,
     model_id: MODEL_ID,
     voice_settings: {
-      stability: 0.35,         // lower = more expressive (UGC energy)
+      stability: 0.35,
       similarity_boost: 0.75,
       style: 0.5,
       use_speaker_boost: true,
     },
   });
 
-  // Write audio stream to file
-  const localPath = `/data/runs/${adId}/vo_audio.mp3`;
+  const localPath = `/data/runs/${adId}/vo_${String(segment.scene_id).padStart(3, '0')}.mp3`;
   const writeStream = createWriteStream(localPath);
-  for await (const chunk of audio) {
-    writeStream.write(chunk);
-  }
+  for await (const chunk of audio) { writeStream.write(chunk); }
   writeStream.end();
   await new Promise(resolve => writeStream.on('finish', resolve));
 
-  // Sanity check: file exists, non-zero bytes
   const stats = await fs.stat(localPath);
-  if (stats.size === 0) throw new Error('VO audio file is 0 bytes');
+  if (stats.size === 0) throw new Error(`VO segment ${segment.scene_id} is 0 bytes`);
 
-  // Get actual duration via ffprobe
   const actualDuration = await getAudioDuration(localPath);
-  const targetDuration = script.audio_script.total_duration_target_sec;
-
-  if (Math.abs(actualDuration - targetDuration) > 5) {
-    console.warn(`VO duration ${actualDuration}s deviates >5s from target ${targetDuration}s`);
+  if (Math.abs(actualDuration - segment.target_duration_sec) > 3) {
+    console.warn(`Scene ${segment.scene_id} VO: ${actualDuration}s vs target ${segment.target_duration_sec}s`);
   }
 
-  // Cost: ~$0.03 per 1K characters
-  const charCount = fullVoText.length;
-  const cost = (charCount / 1000) * 0.03;
-  await trackCost(runId, adId, 'audio_gen', 'elevenlabs', cost,
-    { characters: charCount, model: MODEL_ID, voice_id: VOICE_ID, actual_duration: actualDuration });
-
-  await updateStageLog(runId, adId, 'audio_gen', 'completed',
-    { duration_sec: actualDuration, characters: charCount });
+  const cost = (segment.vo_text.length / 1000) * 0.03;
+  await trackCost(runId, adId, `audio_gen_scene_${segment.scene_id}`, 'elevenlabs', cost,
+    { scene_id: segment.scene_id, characters: segment.vo_text.length, actual_duration: actualDuration });
 
   return {
+    scene_id: segment.scene_id,
     file_path: localPath,
     duration_sec: actualDuration,
-    characters: charCount,
+    characters: segment.vo_text.length,
   };
+}
+
+// Called by orchestrator — all segments in parallel
+async function generateAllVoSegments(
+  script: ScriptJson,
+  adId: string,
+  runId: number
+): Promise<VoSegmentResult[]> {
+  await updateStageLog(runId, adId, 'audio_gen', 'in_progress');
+  const results = await Promise.all(
+    script.audio_script.vo_segments.map(seg => generateVoSegment(seg, adId, runId))
+  );
+  await updateStageLog(runId, adId, 'audio_gen', 'completed', { segment_count: results.length });
+  return results;
 }
 ```
 
-**Timing**: ~3–8 seconds. Audio is always done long before video.
+**Filesystem output**:
+```
+/data/runs/{adId}/
+  vo_001.mp3    (hook scene)
+  vo_002.mp3    (body scene 1)
+  vo_003.mp3    (body scene 2)
+  vo_004.mp3    (payoff scene)
+```
 
-**Cost per variant (audio)**: ~350 chars × $0.03/1K = **~$0.01**
+**Timing**: N segments × ~3–5s each, all in parallel → ~3–5s wall time total. Audio completes long before video.
+
+**Cost per variant (audio)**: ~350 chars total across all segments × $0.03/1K = **~$0.01**
 
 ---
 
@@ -696,13 +745,21 @@ async function generateVoiceover(
 
 #### Remotion Composition (React component)
 
+**Key principle**: ALL video clips are muted (`volume={0}`), including lip-sync clips. All audible audio comes exclusively from the original ElevenLabs VO segment files layered as `<Audio>` components at their correct timestamps. Lip-sync clips have correct mouth movements (baked in by Seedance during generation) but their embedded audio is discarded.
+
 ```tsx
 // src/remotion/AdComposition.tsx
 import { AbsoluteFill, Sequence, Audio, OffthreadVideo, Img, useCurrentFrame, interpolate } from 'remotion';
 
+interface VoSegment {
+  sceneId: number;
+  filePath: string;
+  durationSec: number;
+}
+
 interface AdProps {
-  clips: Array<{ src: string; durationSec: number; beat: string }>;
-  voAudioSrc: string;
+  clips: Array<{ src: string; durationSec: number; beat: string; sceneId: number }>;
+  voSegments: VoSegment[];   // one per non-cta scene — replaces single voAudioSrc
   textOverlays: Array<{ text: string; startSec: number; durationSec: number }>;
   endCard: {
     priceDisplay: string;
@@ -716,13 +773,13 @@ interface AdProps {
 }
 
 export const AdComposition: React.FC<AdProps> = ({
-  clips, voAudioSrc, textOverlays, endCard, fps
+  clips, voSegments, textOverlays, endCard, fps
 }) => {
   let currentFrame = 0;
 
   return (
     <AbsoluteFill style={{ backgroundColor: 'black' }}>
-      {/* Video clips sequenced by scene order */}
+      {/* Video clips — ALL muted, including lip-sync clips */}
       {clips.map((clip, i) => {
         const from = currentFrame;
         const durationFrames = Math.round(clip.durationSec * fps);
@@ -731,6 +788,7 @@ export const AdComposition: React.FC<AdProps> = ({
           <Sequence from={from} durationInFrames={durationFrames} key={`clip-${i}`}>
             <OffthreadVideo
               src={clip.src}
+              volume={0}   // always muted — embedded audio discarded
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           </Sequence>
@@ -742,8 +800,20 @@ export const AdComposition: React.FC<AdProps> = ({
         <EndCard {...endCard} />
       </Sequence>
 
-      {/* VO audio — master clock, plays continuously from frame 0 */}
-      <Audio src={voAudioSrc} />
+      {/* VO audio — one <Audio> per segment, each at the correct scene timestamp */}
+      {(() => {
+        let audioFrame = 0;
+        return voSegments.map((seg, i) => {
+          const from = audioFrame;
+          const durationFrames = Math.round(seg.durationSec * fps);
+          audioFrame += durationFrames;
+          return (
+            <Sequence from={from} durationInFrames={durationFrames} key={`vo-${i}`}>
+              <Audio src={seg.filePath} volume={1} />
+            </Sequence>
+          );
+        });
+      })()}
 
       {/* Text overlays at specified timings */}
       {textOverlays.filter(o => o.text).map((overlay, i) => (
@@ -1000,10 +1070,14 @@ async function exportAndFinalize(
   claim_report.json
   cost_breakdown.json
   clips/
-    clip_001.mp4    (hook — Seedance output)
-    clip_002.mp4    (body — Seedance output)
-    clip_003.mp4    (payoff — Seedance output)
-  vo_audio.mp3      (ElevenLabs output)
+    clip_001.mp4    (hook — Seedance, lip-synced)
+    clip_002.mp4    (body — Seedance, silent b-roll)
+    clip_003.mp4    (body — Seedance, silent pov)
+    clip_004.mp4    (payoff — Seedance, lip-synced)
+  vo_001.mp3        (hook VO segment — ElevenLabs)
+  vo_002.mp3        (body VO segment — ElevenLabs)
+  vo_003.mp3        (body VO segment — ElevenLabs)
+  vo_004.mp3        (payoff VO segment — ElevenLabs)
   output/
     9x16.mp4        (final rendered — Remotion)
     1x1.mp4
@@ -1085,7 +1159,7 @@ CREATE TABLE assets (
   run_id          INTEGER NOT NULL REFERENCES runs(id) ON DELETE CASCADE,
   ad_id           TEXT NOT NULL,
   
-  asset_type      TEXT NOT NULL,    -- 'video_clip', 'vo_audio', 'final_video'
+  asset_type      TEXT NOT NULL,    -- 'video_clip', 'vo_segment', 'final_video'
   format          TEXT,             -- '9:16', '1:1', '16:9' (for final_video)
   scene_id        INTEGER,          -- 1, 2, 3 (for video_clip)
   beat            TEXT,             -- 'hook', 'body', 'payoff' (for video_clip)
@@ -1343,16 +1417,32 @@ async function runPipeline(userInput: UserInput): Promise<string> {
     const hookDesc = await getHookDescription(userInput.hook);
     const script = await generateAndValidateScript(facts, userInput, angleDesc, hookDesc, runId, adId);
 
-    // 5. Video + Audio in PARALLEL
+    // 5. Video + Audio — 3-step fan-out
     await updateRunStatus(runId, 'generating', 'video_gen + audio_gen');
-    const [videoClips, voAudio] = await Promise.all([
-      generateAllVideoClips(script, facts, userInput, runId, adId),
-      generateVoiceover(script, runId, adId),
+
+    const nonLipSyncScenes = script.video_script.scenes.filter(
+      s => s.beat !== 'cta' && !s.lip_sync
+    );
+    const lipSyncScenes = script.video_script.scenes.filter(s => s.lip_sync);
+
+    // Step 1: VO segments + non-lip-sync video clips in PARALLEL
+    const [voSegments, nonLipSyncClips] = await Promise.all([
+      generateAllVoSegments(script, adId, runId),                   // all segments, parallel
+      generateVideoClips(nonLipSyncScenes, script, facts, runId, adId),  // no audio ref needed
     ]);
+
+    // Step 2: Lip-sync video clips — needs voSegments from Step 1
+    const lipSyncClips = await generateVideoClips(
+      lipSyncScenes, script, facts, runId, adId, voSegments        // passes matching VO segment per scene
+    );
+
+    // Combine and sort by scene_id for assembly
+    const videoClips = [...nonLipSyncClips, ...lipSyncClips]
+      .sort((a, b) => a.scene_id - b.scene_id);
 
     // 6. Assembly
     await updateRunStatus(runId, 'assembling', 'assembly');
-    const assembly = await assembleAd(videoClips, voAudio, script, userInput, runId, adId);
+    const assembly = await assembleAd(videoClips, voSegments, script, userInput, runId, adId);
 
     // 7. Export & Finalize
     await updateRunStatus(runId, 'exporting', 'export');
