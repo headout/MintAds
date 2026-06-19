@@ -9,7 +9,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",
     "@elevenlabs/elevenlabs-js": "^2.53.0",
-    "@higgsfield/client": "^0.2.1",
+    "@fal-ai/client": "^1.10.1",
     "@remotion/bundler": "^4.0.0",
     "@remotion/renderer": "^4.0.0",
     "cors": "^2.8.5",

@@ -38,18 +38,118 @@ export function generateAdId(facts: FactsJson, userInput: UserInput): string {
 function buildSystemPrompt(): string {
   return `You are a UGC ad scriptwriter for Headout, a travel experiences marketplace.
 
-TASK: Generate a structured 15–25 second UGC-style video ad script from the catalog data provided.
+TASK: Generate a 30–40 second UGC-style video ad script from the catalog data provided.
 Output: ONE raw JSON object. No markdown fences. No preamble. No trailing text. Just the JSON.
 
-TONE: First-person creator voice. Casual, authentic, energetic — like a real traveller on their phone talking to camera. NOT corporate narration. NOT polished brand voice.
+TONE: First-person creator voice. Casual, authentic, energetic — like a real traveller on their phone talking to camera. NOT corporate narration. NOT polished brand voice. Mimic how top travel creators on TikTok/Reels structure their content.
 
-SCENE STRUCTURE (required):
-- beat "hook" (2–4s): Scroll-stopping opener. Dramatize a problem, trigger FOMO, or pattern interrupt.
-- beat "body" (6–10s): Creator walks through the experience. Use real facts to build value.
-- beat "payoff" (4–6s): The reveal or transformation moment. Emotional peak.
-- beat "cta" (3–5s): End card only. photo_reference_index MUST be null. No vo_segment for this beat.
+═══════════════════════════════════════════
+SCENE STRUCTURE
+═══════════════════════════════════════════
+You decide the number of content scenes (4 or 5) based on what the experience needs.
+Every ad ends with exactly one "cta" scene (end card — Remotion-rendered, NOT a Higgsfield call).
 
-CLAIM TRACING (mandatory — violating this breaks the pipeline):
+Beat types and their constraints:
+  "hook"    (4–6s)  — Scroll-stopping opener. EXACTLY ONE. Always scene_id 1.
+  "body"    (6–10s) — Experience walkthrough. 2–3 body scenes per ad.
+  "payoff"  (4–6s)  — Emotional peak or transformation. EXACTLY ONE. Last scene before cta.
+  "cta"     (4s)    — End card. ALWAYS the final scene. photo_reference_indices MUST be []. NO vo_segment.
+
+Valid ad structures:
+  4 content scenes → hook + body + body + payoff + cta  (5 scenes total)
+  5 content scenes → hook + body + body + body + payoff + cta  (6 scenes total)
+
+Duration rules:
+  • Each scene (excluding cta): 4–10 seconds
+  • Sum of all scene durations INCLUDING cta: 30–40 seconds
+  • Sum of non-cta scene durations: 26–36 seconds
+
+═══════════════════════════════════════════
+SHOT TYPES — assign one per scene
+═══════════════════════════════════════════
+  "ugc_creator"       — Creator is on camera, talking or reacting to the camera. High energy.
+  "b_roll"            — Cinematic experience footage. No creator visible. Venue, crowd, views, atmosphere.
+  "pov"               — First-person perspective — what the creator sees. Shaky handheld. Creator's hands may appear.
+  "experience_detail" — Close-up on one compelling detail: artwork, food, a ticket, a stunning vista close-up.
+
+Assignment guidance:
+  • Hook: strongly prefer "ugc_creator" — creator talking directly to camera grabs attention
+  • Body scenes: NEVER use the same shot_type twice in a row. Mix b_roll, pov, experience_detail freely.
+    One body scene CAN be "ugc_creator" if the experience naturally calls for a creator reaction moment.
+  • Payoff: prefer "ugc_creator" (creator's genuine reaction) or "b_roll" (cinematic reveal)
+  • CTA: shot_type is irrelevant (Remotion end card) — set to "experience_detail" as a placeholder
+
+Visual direction for each shot_type:
+  "ugc_creator"       → Describe: what creator says/does on camera, their energy, gesture, frame composition
+  "b_roll"            → Describe: what is being shown, camera movement (slow push, tracking, wide establishing), mood
+  "pov"               → Describe: what the camera (as creator's eyes) sees, movement, what is revealed
+  "experience_detail" → Describe: the specific detail, how it's framed (macro, tilt-up, reveal), lighting
+
+═══════════════════════════════════════════
+PHOTO REFERENCES — photo_reference_indices
+═══════════════════════════════════════════
+photo_reference_indices is an ARRAY of 0-based indices into facts.photos[].
+The video engine sends these photos to fal.ai as image references for that scene.
+Multiple photos help the model generate richer, more context-aware video.
+
+Rules per shot_type:
+  "ugc_creator"       → 1–2 venue photo indices. The creator photo is automatically prepended as the first reference — do NOT add a creator photo index here. These are venue-only indices.
+  "b_roll"            → 1–2 venue photo indices. Two complementary angles = richer generation.
+  "pov"               → 1 venue photo index — the best single-angle shot of what the creator would see.
+  "experience_detail" → 1 venue photo index — the most detail-rich or visually striking photo.
+  "cta"               → MUST be []. Always.
+
+Select photos by matching photo.keyword or photo.alt to the scene's purpose.
+It is acceptable (and encouraged) to reuse the same photo index across scenes if one photo is the strongest reference for multiple scenes.
+
+CRITICAL — Photo perspective for "ugc_creator" scenes:
+The model places the creator INTO the photo's spatial context. An aerial or bird's-eye photo
+makes the creator appear to float or fly in the air — a physically impossible result.
+
+For "ugc_creator" scenes, ONLY select photos that are:
+  ✓ Ground-level or eye-level shots
+  ✓ Interior spaces, entrance areas, floor-level courtyards, visitor walkways
+  ✓ Scenes where a human figure can plausibly stand on solid ground
+
+For "ugc_creator" scenes, NEVER select photos that are:
+  ✗ Aerial, bird's-eye, overhead, or drone shots
+  ✗ Elevated panoramas where the ground is far below (rooftop views, cliff-top vistas)
+  ✗ Photos whose keyword or alt text contains words like: "aerial", "panoramic from top",
+    "overhead", "bird's eye", "from above", "drone", "bird eye", "view from", "roman forum and palatine hill" (that specific photo is aerial)
+
+For "b_roll" and "pov" scenes: aerial, wide, and overhead shots are fine and often preferred.
+
+═══════════════════════════════════════════
+GLOBAL STYLE
+═══════════════════════════════════════════
+Each fal.ai call is a separate API call with no memory of the others. global_style is the only
+mechanism ensuring visual coherence across all scenes. Be specific — vague descriptions produce inconsistent results.
+
+creator_description:
+  Describe the on-screen creator with enough specificity to reproduce the SAME person across all calls.
+  Include: approximate age, apparent gender/presentation, specific clothing items and colours, accessories, energy level.
+  Derive from the selected persona and the experience's location/cultural vibe.
+  GOOD: "25-year-old solo female traveller, white linen shirt, slim-fit stone-wash jeans, small canvas daypack, warm Mediterranean tan, genuine excited energy"
+  BAD:  "young traveller in casual clothes"
+
+aesthetic:
+  One sentence covering the shared visual style for ALL scenes. Include: camera style, lighting quality, colour temperature, mood.
+  This string is prepended verbatim to every fal.ai scene prompt.
+  GOOD: "UGC handheld 9:16, warm golden-hour Mediterranean light, slightly shaky authentic camera, cinematic grading"
+  BAD:  "nice video"
+
+background_music_volume:
+  Array of floats (0.0–1.0), one value per non-cta scene IN SCENE ORDER.
+  Length MUST equal the number of non-cta scenes (4 or 5).
+  fal.ai generates silent video clips. Remotion layers background music over all clips and uses these
+  values to control music volume per scene, ducking it under the ElevenLabs VO track.
+  Rule of thumb: 0.15–0.25 for scenes with heavy VO (hook, body), 0.30–0.45 for payoff where music can breathe.
+  Example for 4 content scenes: [0.2, 0.15, 0.2, 0.4]
+  Example for 5 content scenes: [0.2, 0.15, 0.2, 0.2, 0.4]
+
+═══════════════════════════════════════════
+CLAIM TRACING (mandatory)
+═══════════════════════════════════════════
 - Every price, rating, review count, duration, or named feature on screen or in VO must come from facts.json
 - Add EVERY factual claim to claim_sources as: "claim text as it appears" → "facts.field.path"
 - claim_sources values must be ONLY the bare path — no annotations, no quotes, no extra text
@@ -60,42 +160,13 @@ CLAIM TRACING (mandatory — violating this breaks the pipeline):
 - Do NOT invent numbers. Do NOT round. Use exact values from facts.json.
 - claim_sources MUST be non-empty.
 
-PHOTO REFERENCE:
-- photo_reference_index is 0-based into facts.photos[]
-- Match the photo to the scene using photo.keyword or photo.alt
-- For beat "cta" (end card), photo_reference_index MUST be null
-
 VO SEGMENTS:
-- Write vo_segments for beats hook, body, payoff only — NOT cta (end card has no VO)
-- Sum of vo_segment target_duration_sec must be 12–22s
-- Sum of all scene duration_sec must be 15–25s
+- Write vo_segments for beats hook, body, payoff ONLY — NOT cta
+- Sum of vo_segment target_duration_sec: 26–36s (covers all non-cta scenes)
 
-GLOBAL STYLE (required — consumed by the video engine for ALL 3 Higgsfield calls):
-Each Higgsfield scene is a separate API call with no memory of the others. global_style is the
-only mechanism ensuring visual coherence across all segments. Be specific.
-
-- creator_description: describe the on-screen creator with enough specificity to reproduce the
-  SAME person across 3 independent calls. Include: approximate age, apparent gender, specific
-  clothing items and colours, accessories, energy level. Derive from the persona and experience
-  location/vibe.
-  GOOD: "25-year-old solo female traveller, white linen shirt, slim-fit stone-wash jeans,
-        small canvas daypack, warm Mediterranean tan, genuine excited energy"
-  BAD:  "young traveller in casual clothes"
-
-- aesthetic: one sentence covering the shared visual style for all scenes. Include: camera
-  style, lighting quality and colour temperature, mood. This string is prepended verbatim to
-  every Higgsfield prompt.
-  GOOD: "UGC handheld 9:16, warm golden-hour Mediterranean light, slightly shaky camera,
-        cinematic but authentic, continuous visual theme across all cuts"
-  BAD:  "nice video"
-
-- background_music_volume: array of floats (0.0–1.0), one entry per non-cta scene in order
-  [hook, body, payoff]. Higgsfield bakes background music into each clip; Remotion uses these
-  values to duck the clip audio under the ElevenLabs VO.
-  Rule of thumb: 0.15–0.25 for hook/body (VO is dominant), 0.30–0.45 for payoff (music
-  can breathe). Must have exactly 3 values.
-
-OUTPUT SCHEMA (output this exact structure, nothing else):
+═══════════════════════════════════════════
+OUTPUT SCHEMA — output this exact structure
+═══════════════════════════════════════════
 {
   "ad_id": "HDO_META_{City}_{AngleId}_{HookId}_UGC_EN_v01",
   "metadata": {
@@ -109,21 +180,31 @@ OUTPUT SCHEMA (output this exact structure, nothing else):
   },
   "video_script": {
     "global_style": {
-      "creator_description": "specific creator description — age, gender, exact clothing, accessories, energy",
-      "aesthetic": "shared visual style sentence for all Higgsfield calls",
-      "background_music_volume": [0.2, 0.2, 0.4]
+      "creator_description": "specific creator description — age, presentation, exact clothing, accessories, energy",
+      "aesthetic": "shared visual style sentence prepended to every Higgsfield prompt",
+      "background_music_volume": [0.2, 0.15, 0.2, 0.4]
     },
     "scenes": [
       {
         "scene_id": 1,
         "beat": "hook",
-        "duration_sec": 3,
-        "visual_direction": "Detailed Higgsfield I2V direction. UGC handheld style. Include creator action and camera movement.",
+        "shot_type": "ugc_creator",
+        "duration_sec": 5,
+        "visual_direction": "Detailed scene direction for fal.ai I2V. Describe subject, action, camera movement, framing. UGC handheld style.",
         "text_overlay": "string or null",
-        "photo_reference_index": 0
+        "photo_reference_indices": [0]
+      },
+      {
+        "scene_id": 2,
+        "beat": "body",
+        "shot_type": "b_roll",
+        "duration_sec": 9,
+        "visual_direction": "...",
+        "text_overlay": null,
+        "photo_reference_indices": [1, 2]
       }
     ],
-    "total_duration_sec": 20
+    "total_duration_sec": 35
   },
   "audio_script": {
     "vo_segments": [
@@ -131,12 +212,12 @@ OUTPUT SCHEMA (output this exact structure, nothing else):
         "scene_id": 1,
         "beat": "hook",
         "vo_text": "Actual spoken VO text",
-        "target_duration_sec": 3,
+        "target_duration_sec": 5,
         "pacing": "fast, punchy"
       }
     ],
     "tone": "energetic, conversational, UGC creator voice",
-    "total_duration_target_sec": 16
+    "total_duration_target_sec": 31
   },
   "end_card": {
     "price_display": "string",
@@ -269,26 +350,64 @@ function claimMatchesValue(claimText: string, factsValue: unknown): boolean {
   return significantWords.some(w => valueStr.includes(w));
 }
 
-function validateStructural(script: ScriptJson): string[] {
+const VALID_SHOT_TYPES = new Set(['ugc_creator', 'b_roll', 'pov', 'experience_detail']);
+
+function validateStructural(script: ScriptJson, facts: FactsJson): string[] {
   const v: string[] = [];
 
   const scenes = script.video_script?.scenes;
   if (!Array.isArray(scenes) || scenes.length === 0) {
     v.push('video_script.scenes is empty or missing');
-  } else {
-    for (const sc of scenes) {
-      if (typeof sc.scene_id !== 'number') v.push('A scene is missing scene_id');
-      if (!sc.beat) v.push(`Scene ${sc.scene_id} is missing beat`);
-      if (typeof sc.duration_sec !== 'number' || sc.duration_sec <= 0)
-        v.push(`Scene ${sc.scene_id} has invalid duration_sec`);
-      if (!sc.visual_direction) v.push(`Scene ${sc.scene_id} is missing visual_direction`);
-    }
-
-    const totalVideo = scenes.reduce((s, sc) => s + (sc.duration_sec ?? 0), 0);
-    if (totalVideo < 15 || totalVideo > 30)
-      v.push(`Total video duration ${totalVideo}s is outside the 15–30s range`);
+    return v; // can't continue without scenes
   }
 
+  // Per-scene field checks
+  for (const sc of scenes) {
+    if (typeof sc.scene_id !== 'number') v.push('A scene is missing scene_id');
+    if (!sc.beat) v.push(`Scene ${sc.scene_id} is missing beat`);
+    if (typeof sc.duration_sec !== 'number' || sc.duration_sec <= 0)
+      v.push(`Scene ${sc.scene_id} has invalid duration_sec`);
+    if (sc.beat !== 'cta' && !sc.visual_direction)
+      v.push(`Scene ${sc.scene_id} is missing visual_direction`);
+    if (!sc.shot_type || !VALID_SHOT_TYPES.has(sc.shot_type))
+      v.push(`Scene ${sc.scene_id} has invalid shot_type "${sc.shot_type}" — must be ugc_creator | b_roll | pov | experience_detail`);
+
+    // photo_reference_indices must be an array
+    if (!Array.isArray(sc.photo_reference_indices)) {
+      v.push(`Scene ${sc.scene_id}: photo_reference_indices must be an array`);
+    } else if (sc.beat === 'cta' && sc.photo_reference_indices.length > 0) {
+      v.push(`Scene ${sc.scene_id} (cta): photo_reference_indices must be [] for cta scenes`);
+    } else {
+      for (const idx of sc.photo_reference_indices) {
+        if (typeof idx !== 'number' || idx < 0 || idx >= facts.photos.length)
+          v.push(`Scene ${sc.scene_id}: photo_reference_indices[${idx}] is out of range (valid: 0–${facts.photos.length - 1})`);
+      }
+    }
+  }
+
+  // Beat composition
+  const nonCtaScenes = scenes.filter(sc => sc.beat !== 'cta');
+  const ctaScenes = scenes.filter(sc => sc.beat === 'cta');
+  const hookScenes = scenes.filter(sc => sc.beat === 'hook');
+  const payoffScenes = scenes.filter(sc => sc.beat === 'payoff');
+
+  if (hookScenes.length !== 1) v.push(`Expected exactly 1 hook scene, got ${hookScenes.length}`);
+  if (payoffScenes.length !== 1) v.push(`Expected exactly 1 payoff scene, got ${payoffScenes.length}`);
+  if (ctaScenes.length !== 1) v.push(`Expected exactly 1 cta scene, got ${ctaScenes.length}`);
+
+  if (nonCtaScenes.length < 4 || nonCtaScenes.length > 5)
+    v.push(`Expected 4–5 non-cta content scenes, got ${nonCtaScenes.length}`);
+
+  // Duration checks
+  const totalVideo = scenes.reduce((s, sc) => s + (sc.duration_sec ?? 0), 0);
+  if (totalVideo < 30 || totalVideo > 40)
+    v.push(`Total video duration ${totalVideo}s is outside the 30–40s range`);
+
+  const totalContent = nonCtaScenes.reduce((s, sc) => s + (sc.duration_sec ?? 0), 0);
+  if (totalContent < 26 || totalContent > 36)
+    v.push(`Non-cta scene total ${totalContent}s is outside the 26–36s range`);
+
+  // VO segments
   const segs = script.audio_script?.vo_segments;
   if (!Array.isArray(segs) || segs.length === 0) {
     v.push('audio_script.vo_segments is empty or missing');
@@ -299,19 +418,18 @@ function validateStructural(script: ScriptJson): string[] {
         v.push(`vo_segment for scene ${seg.scene_id} has invalid target_duration_sec`);
     }
 
-    const nonCtaSceneIds = new Set(
-      (scenes ?? []).filter(sc => sc.beat !== 'cta').map(sc => sc.scene_id),
-    );
+    const nonCtaSceneIds = new Set(nonCtaScenes.map(sc => sc.scene_id));
     for (const seg of segs) {
       if (!nonCtaSceneIds.has(seg.scene_id))
         v.push(`vo_segment references scene_id ${seg.scene_id} which has no matching non-cta scene`);
     }
 
     const totalVo = segs.reduce((s, seg) => s + (seg.target_duration_sec ?? 0), 0);
-    if (totalVo < 12 || totalVo > 28)
-      v.push(`Total VO duration ${totalVo}s is outside the 12–28s range`);
+    if (totalVo < 26 || totalVo > 36)
+      v.push(`Total VO duration ${totalVo}s is outside the 26–36s range`);
   }
 
+  // End card
   const ec = script.end_card;
   if (!ec?.price_display) v.push('end_card.price_display is missing');
   if (!ec?.rating_display) v.push('end_card.rating_display is missing');
@@ -338,8 +456,9 @@ function validateStructural(script: ScriptJson): string[] {
     if (!Array.isArray(gs.background_music_volume)) {
       v.push('global_style.background_music_volume must be an array');
     } else {
-      if (gs.background_music_volume.length !== 3)
-        v.push(`global_style.background_music_volume must have exactly 3 values (hook, body, payoff), got ${gs.background_music_volume.length}`);
+      const expectedLen = nonCtaScenes.length;
+      if (gs.background_music_volume.length !== expectedLen)
+        v.push(`global_style.background_music_volume must have ${expectedLen} values (one per non-cta scene), got ${gs.background_music_volume.length}`);
       for (const val of gs.background_music_volume) {
         if (typeof val !== 'number' || val < 0 || val > 1)
           v.push(`global_style.background_music_volume contains invalid value "${val}" — must be 0.0–1.0`);
@@ -448,7 +567,7 @@ function validateOrphans(script: ScriptJson): string[] {
 
 function runValidator(script: ScriptJson, facts: FactsJson): string[] {
   return [
-    ...validateStructural(script),
+    ...validateStructural(script, facts),
     ...validateClaimCompleteness(script, facts),
     ...validateOrphans(script),
   ];

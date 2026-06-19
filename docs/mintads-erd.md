@@ -221,6 +221,7 @@ GET https://www.headout.com/api/v6/tour-groups/{tourGroupId}/
 
 **Output**: `facts.json` stored as JSONB in `runs.facts` column AND written to `/data/runs/{ad_id}/facts.json`.
 
+
 ```json
 {
   "experience_id": "eiffel-tower-summit-guided-tour",
@@ -297,88 +298,100 @@ GET https://www.headout.com/api/v6/tour-groups/{tourGroupId}/
 
 **What happens**: One Claude API call produces the complete `script.json` containing both video and audio directives as a paired structure.
 
-#### System Prompt
+#### Key design decisions (updated)
 
-```typescript
-const SCRIPT_ENGINE_SYSTEM_PROMPT = `You are a UGC ad script writer for Headout, a travel experiences marketplace.
+- **Duration**: 30–40s total ad (including 4s Remotion end card). Content scenes: 26–36s.
+- **Scene count**: Dynamic — 4 or 5 content scenes decided by Claude based on the experience. No fixed 3-scene structure.
+- **Per-scene `shot_type`**: `ugc_creator | b_roll | pov | experience_detail` — drives Higgsfield prompt and image selection.
+- **`photo_reference_indices`**: Array of 0-based indices into `facts.photos[]`. 1–2 per scene. Empty `[]` for cta only.
+- **`background_music_volume`**: Dynamic-length array — one float per non-cta scene (4 or 5 values).
+- **Creator identity**: `global_style.creator_description` feeds the SoulId-registered creator. For `ugc_creator` scenes, SoulId is passed to Higgsfield; for b_roll/pov/experience_detail, SoulId is omitted.
 
-You write scripts that feel like an influencer showing their real experience — first-person, conversational, energetic, authentic. NOT polished brand copy. NOT a narrator. A creator talking to camera.
+#### script.json schema
 
-OUTPUT: Return ONLY valid JSON. No markdown. No backticks. No preamble.
-
-STRUCTURE — exactly 3 content scenes + end card metadata:
-
+```json
 {
-  "ad_id": "HDO_META_{POI}_{Angle}_{Hook}_UGC_EN_v01",
+  "ad_id": "HDO_META_{City}_{AngleId}_{HookId}_UGC_EN_v01",
+  "metadata": { "experience_id": "...", "persona": "...", "journey_type": "...", "brand": "...", "angle": "...", "hook": "...", "video_format": "..." },
   "video_script": {
+    "global_style": {
+      "creator_description": "25-year-old solo female traveller, white linen shirt, slim-fit jeans, light daypack, warm Mediterranean tan. Same person across all ugc_creator scenes.",
+      "aesthetic": "UGC handheld 9:16, warm golden-hour Mediterranean light, slightly shaky camera, cinematic but authentic",
+      "background_music_volume": [0.2, 0.15, 0.2, 0.4]
+    },
     "scenes": [
       {
         "scene_id": 1,
         "beat": "hook",
-        "duration_sec": <3-5>,
-        "visual_direction": "<cinematic direction for AI video generation from the referenced product photo. Describe: subject, action, setting, camera movement, lighting, UGC aesthetic. Be specific enough that a video AI model can generate it.>",
-        "text_overlay": "<short text under 10 words, or null if no overlay>",
-        "photo_reference_index": <integer — index into the photos array, selected based on photo alt/keyword match to this scene's purpose>
+        "shot_type": "ugc_creator",
+        "duration_sec": 5,
+        "visual_direction": "Detailed Higgsfield I2V direction...",
+        "text_overlay": "They waited 3 hours.",
+        "photo_reference_indices": [0]
       },
-      // scene_id 2: beat "body", duration 8-12s
-      // scene_id 3: beat "payoff", duration 4-6s
+      {
+        "scene_id": 2,
+        "beat": "body",
+        "shot_type": "b_roll",
+        "duration_sec": 9,
+        "visual_direction": "Slow tracking shot through the Colosseum arena floor...",
+        "text_overlay": null,
+        "photo_reference_indices": [1, 2]
+      },
+      {
+        "scene_id": 3,
+        "beat": "body",
+        "shot_type": "pov",
+        "duration_sec": 8,
+        "visual_direction": "POV handheld — walking through the underground hypogeum...",
+        "text_overlay": null,
+        "photo_reference_indices": [3]
+      },
+      {
+        "scene_id": 4,
+        "beat": "payoff",
+        "shot_type": "ugc_creator",
+        "duration_sec": 7,
+        "visual_direction": "Creator at the arena floor edge, turning to camera with genuine awe...",
+        "text_overlay": "Worth every cent.",
+        "photo_reference_indices": [0]
+      },
+      {
+        "scene_id": 5,
+        "beat": "cta",
+        "shot_type": "experience_detail",
+        "duration_sec": 4,
+        "visual_direction": "",
+        "text_overlay": null,
+        "photo_reference_indices": []
+      }
     ],
-    "total_duration_sec": <sum of all scene durations, must be 15-23>
+    "total_duration_sec": 33
   },
   "audio_script": {
     "vo_segments": [
-      {
-        "scene_id": 1,
-        "beat": "hook",
-        "vo_text": "<spoken words for this beat — conversational, first-person, UGC creator energy>",
-        "target_duration_sec": <must match the corresponding video scene's duration_sec>,
-        "pacing": "<fast/slow/energetic/building/punchy/confident>"
-      }
-      // one vo_segment per video scene (3 total, matching scene_ids)
+      { "scene_id": 1, "beat": "hook", "vo_text": "...", "target_duration_sec": 5, "pacing": "fast, punchy" },
+      { "scene_id": 2, "beat": "body", "vo_text": "...", "target_duration_sec": 9, "pacing": "building" },
+      { "scene_id": 3, "beat": "body", "vo_text": "...", "target_duration_sec": 8, "pacing": "conversational" },
+      { "scene_id": 4, "beat": "payoff", "vo_text": "...", "target_duration_sec": 7, "pacing": "confident" }
     ],
     "tone": "energetic, conversational, UGC creator voice",
-    "total_duration_target_sec": <sum of vo segment durations, must be 15-23>
+    "total_duration_target_sec": 29
   },
   "end_card": {
-    "price_display": "<from facts.price.display>",
-    "rating_display": "<from facts.rating>★",
-    "review_count_display": "<from facts.review_count formatted>+ reviews",
-    "cta_text": "<action-oriented CTA, 3-5 words>",
-    "brand_logo": <true if brand=headout, false otherwise>,
-    "cancellation_text": "<from facts.inclusions if free cancellation exists, else null>"
+    "price_display": "€25.35",
+    "rating_display": "4.4★",
+    "review_count_display": "26,773+ reviews",
+    "cta_text": "Book on Headout",
+    "brand_logo": true,
+    "cancellation_text": "Free cancellation"
   },
   "claim_sources": {
-    "<every factual claim used in vo_text, text_overlay, or end_card>": "<facts.json field path>"
+    "€25.35": "facts.price.display",
+    "4.4★": "facts.rating",
+    "26,773+ reviews": "facts.review_count"
   }
 }
-
-RULES:
-1. EXACTLY 3 content scenes: hook (3-5s), body (8-12s), payoff (4-6s). No more, no less.
-2. Every vo_segment.scene_id MUST match a scene in video_script.scenes.
-3. Every vo_segment.target_duration_sec MUST equal the matching scene's duration_sec.
-4. CLAIM TRACING IS MANDATORY: every factual assertion (prices, ratings, durations, features, review quotes) appearing ANYWHERE in the script MUST have an entry in claim_sources mapping to a facts.json field path.
-5. NO HALLUCINATED CLAIMS: if a fact isn't in the provided data, don't use it. Ever.
-6. PHOTO SELECTION: choose the best photo for each scene based on the photo's alt text and keyword. Hook = most attention-grabbing. Body = best illustration of the experience. Payoff = most emotional/revealing.
-7. Visual directions must describe what an AI video generation model (Seedance 2.0) should create from the referenced product photo. Include: subject, action, setting, camera movement (handheld/tracking/slow-push), lighting, and UGC aesthetic cues.
-8. For UGC style: include a human creator presence in visual directions where appropriate — someone walking through, reacting, gesturing, showing their phone. This is influencer content, not stock footage.
-9. The ad_id follows: HDO_META_{short experience name}_{angle ID}_{hook type}_UGC_EN_v01
-
-PERSONA LENS:
-- solo: personal discovery, "I" language, independent explorer energy
-- couple: shared moment, "we" language, romantic or adventurous
-- art_enthusiast: aesthetic depth, artistic appreciation, visual beauty
-- cultural: historical significance, deeper meaning, authentic local perspective
-- family: safety, ease, kids-friendly, value
-- budget: smart spending, value framing, cost-per-memory
-
-JOURNEY MODIFIER:
-- pre_trip: aspirational, dreamy, "imagine yourself here", planning inspiration
-- in_trip: urgent, actionable, "book now", "you're right here", FOMO
-
-BRAND MODE:
-- headout: CTA mentions Headout by name ("Book on Headout"), logo in end card
-- non_headout: experience-led CTA ("Book now", "Skip the line"), no Headout branding
-`;
 ```
 
 #### User Message Construction
@@ -413,111 +426,27 @@ Generate the script now. Return ONLY the JSON object.`;
 
 #### Script Validator (runs automatically before proceeding)
 
-```typescript
-interface ValidationResult {
-  passed: boolean;
-  violations: string[];
-}
+Three checks run in sequence. Any violation triggers a retry with violations appended to the prompt.
 
-function validateScript(script: ScriptJson, facts: FactsJson): ValidationResult {
-  const violations: string[] = [];
+**CHECK 1: Structural validity**
+- Exactly 1 `hook` scene, 1 `payoff` scene, 1 `cta` scene
+- 2–3 `body` scenes (total non-cta scenes: 4–5)
+- Total video duration (all scenes incl cta): 30–40s
+- Non-cta content total: 26–36s
+- Total VO duration: 26–36s
+- Each scene has: `scene_id`, `beat`, `shot_type` (valid enum), `duration_sec > 0`, `visual_direction` (non-cta)
+- `photo_reference_indices` is an array; each index in range 0..(facts.photos.length - 1); `[]` for cta
+- `background_music_volume` length == non-cta scene count; all values 0.0–1.0
+- `end_card` has `price_display`, `rating_display`, `cta_text`
+- `ad_id` follows `HDO_` convention
 
-  // CHECK 1: Structural validity
-  if (!script.video_script?.scenes?.length) {
-    violations.push('video_script.scenes is empty or missing');
-  } else {
-    if (script.video_script.scenes.length !== 3) {
-      violations.push(`Expected 3 scenes, got ${script.video_script.scenes.length}`);
-    }
-    for (const scene of script.video_script.scenes) {
-      if (!scene.scene_id || !scene.beat || !scene.duration_sec || !scene.visual_direction) {
-        violations.push(`Scene ${scene.scene_id}: missing required fields`);
-      }
-      if (scene.photo_reference_index !== null &&
-          (scene.photo_reference_index < 0 || scene.photo_reference_index >= facts.photos.length)) {
-        violations.push(`Scene ${scene.scene_id}: photo_reference_index ${scene.photo_reference_index} out of range (0-${facts.photos.length - 1})`);
-      }
-    }
-    const totalDuration = script.video_script.scenes.reduce((s, sc) => s + sc.duration_sec, 0);
-    if (totalDuration < 15 || totalDuration > 23) {
-      violations.push(`Total scene duration ${totalDuration}s outside 15-23s range`);
-    }
-  }
+**CHECK 2: Claim completeness**
+- Every `claim_sources` entry whose value starts with `facts.` must resolve to a real field in facts.json
+- Resolved value must approximately match the claim text (substring or word-overlap)
 
-  if (!script.audio_script?.vo_segments?.length) {
-    violations.push('audio_script.vo_segments is empty or missing');
-  } else {
-    for (const seg of script.audio_script.vo_segments) {
-      if (!seg.scene_id || !seg.vo_text || !seg.target_duration_sec) {
-        violations.push(`VO segment ${seg.scene_id}: missing required fields`);
-      }
-      const matchingScene = script.video_script?.scenes?.find(s => s.scene_id === seg.scene_id);
-      if (!matchingScene) {
-        violations.push(`VO segment ${seg.scene_id}: no matching video scene`);
-      } else if (matchingScene.duration_sec !== seg.target_duration_sec) {
-        violations.push(`VO segment ${seg.scene_id}: duration ${seg.target_duration_sec}s ≠ scene duration ${matchingScene.duration_sec}s`);
-      }
-    }
-  }
-
-  if (!script.end_card?.price_display || !script.end_card?.rating_display || !script.end_card?.cta_text) {
-    violations.push('end_card missing required fields (price_display, rating_display, cta_text)');
-  }
-
-  // CHECK 2: Claim completeness
-  if (!script.claim_sources || Object.keys(script.claim_sources).length === 0) {
-    violations.push('claim_sources is empty — every factual claim must be traced');
-  } else {
-    for (const [claim, sourcePath] of Object.entries(script.claim_sources)) {
-      if (sourcePath.startsWith('facts.')) {
-        const resolved = resolveJsonPath(facts, sourcePath.replace('facts.', ''));
-        if (resolved === undefined) {
-          violations.push(`Claim "${claim}" references non-existent field "${sourcePath}"`);
-        }
-      }
-      // Allow non-facts sources like "config" or "known queue time" — these are acceptable
-    }
-  }
-
-  // CHECK 3: Orphan claim detection
-  const allText = [
-    ...script.audio_script.vo_segments.map(s => s.vo_text),
-    ...script.video_script.scenes.map(s => s.text_overlay).filter(Boolean),
-    script.end_card?.price_display,
-    script.end_card?.rating_display,
-    script.end_card?.review_count_display,
-    script.end_card?.cancellation_text
-  ].filter(Boolean).join(' ');
-
-  // Extract factual assertions: currency amounts, ratings, counts, durations
-  const factPatterns = [
-    /[$€£¥]\d+[\d,.]*/g,                    // currency: $68, €45
-    /\d+[\d,.]*[$€£¥]/g,                    // currency suffix: 68€
-    /\d+\.\d\s*[★☆]/g,                      // ratings: 4.6★
-    /\d+\.\d\/\d/g,                          // ratings: 4.6/5
-    /[\d,]+\+?\s*reviews?/gi,               // review counts: 28,540+ reviews
-    /\d+[-–]\d+\s*(hours?|minutes?|min)/gi, // durations: 1.5-2 hours
-  ];
-
-  const claimKeys = Object.keys(script.claim_sources).map(k => k.toLowerCase());
-  for (const pattern of factPatterns) {
-    const matches = allText.match(pattern) || [];
-    for (const match of matches) {
-      const normalized = match.toLowerCase().trim();
-      const isClaimed = claimKeys.some(k => k.includes(normalized) || normalized.includes(k));
-      if (!isClaimed) {
-        violations.push(`Orphan claim detected: "${match}" found in script text but not in claim_sources`);
-      }
-    }
-  }
-
-  return { passed: violations.length === 0, violations };
-}
-
-function resolveJsonPath(obj: any, path: string): any {
-  return path.split('.').reduce((o, k) => o?.[k], obj);
-}
-```
+**CHECK 3: Orphan claim detection**
+- Scans all VO text, text overlays, and end card fields for: currency amounts, ratings, review counts, durations, percentages
+- Every extracted factual value must appear as a key in `claim_sources`
 
 #### Auto-Retry Logic
 
@@ -572,127 +501,105 @@ async function generateAndValidateScript(
 
 ---
 
-### 3.3 Video Engine (Backend → Higgsfield SDK → Video Clips)
+### 3.3 Video Engine (Backend → fal.ai Seedance 2.0 → Video Clips)
 
 **Trigger**: Script validated successfully. Runs in PARALLEL with Audio Engine.
 
-**What happens**: 3 separate Higgsfield API calls, one per scene, all fired in parallel via `Promise.all`. Each call takes a product photo URL + scene visual direction and returns a video clip.
+**What happens**: N parallel fal.ai calls (one per non-cta scene; N = 4 or 5 depending on script). Endpoint is selected per scene based on `shot_type`. All fired via `Promise.allSettled`. Results downloaded to local filesystem.
+
+**SDK**: `@fal-ai/client` — `fal.subscribe()` handles polling internally. Auth via `FAL_KEY` env var.
+
+#### Endpoint selection by shot_type
+
+| shot_type | Endpoint | image input | Creator in frame? |
+|---|---|---|---|
+| `ugc_creator` | `bytedance/seedance-2.0/fast/reference-to-video` | `image_urls[]` — creator photo + venue photos | Yes (via @Image1) |
+| `b_roll` | `bytedance/seedance-2.0/fast/image-to-video` | `image_url` — single venue photo | No |
+| `pov` | `bytedance/seedance-2.0/fast/image-to-video` | `image_url` — single venue photo | No |
+| `experience_detail` | `bytedance/seedance-2.0/fast/image-to-video` | `image_url` — single venue photo | No |
+
+#### Creator consistency
+
+No SoulId. Creator photo is stored at `static/creators/` and its URL set via `CREATOR_PHOTO_URL` env var.
+For `ugc_creator` scenes, it is always prepended as the first entry in `image_urls` (referenced as `@Image1` in the prompt). For all other shot types, the creator photo is omitted entirely.
+
+#### Prompt structure
+
+Every `@ImageN` included in `image_urls` MUST be explicitly referenced in the prompt text — unused references confuse the model.
+
+**ugc_creator** (reference-to-video):
+```
+@Image1 is the creator — maintain their exact appearance (face, hair, outfit, body type) throughout.
+@Image2 shows: {venue_photo.keyword}.
+@Image3 shows: {venue_photo.keyword}.   ← if 2 venue photos
+
+{global_style.aesthetic}.
+Creator: {global_style.creator_description}.
+Location: {facts.city} — {facts.title}.
+Do NOT embed any text, captions, subtitles, titles, or watermarks in the frame.
+No speech or lip-sync audio. Silent video only.
+Creator shows only natural authentic human reactions — genuine awe, wonder, excitement.
+No winking, no exaggerated gestures, no theatrical expressions.
+All scenes share the same visual theme and color grade to cut together seamlessly.
+---
+{scene.visual_direction}
+```
+
+**b_roll / pov / experience_detail** (image-to-video):
+```
+@Image1 shows: {venue_photo.keyword}.
+
+{global_style.aesthetic}.
+Location: {facts.city} — {facts.title}.
+Do NOT embed any text, captions, subtitles, titles, or watermarks in the frame.
+No speech or lip-sync audio. Silent video only.
+All scenes share the same visual theme and color grade to cut together seamlessly.
+---
+{scene.visual_direction}
+```
+
+#### Key input params
 
 ```typescript
-import { higgsfield, config } from '@higgsfield/client/v2';
-
-config({ credentials: process.env.HIGGSFIELD_CREDENTIALS }); // KEY_ID:KEY_SECRET
-
-interface VideoGenInput {
-  scene_id: number;
-  beat: string;
-  prompt: string;
-  image_url: string;
-  duration: number;
-  aspect_ratio: string;
+// reference-to-video (ugc_creator scenes)
+{
+  prompt: fullPrompt,          // includes @Image1, @Image2... labels
+  image_urls: string[],        // [creator_photo_url, ...venue_photo_urls]
+  resolution: "720p",
+  duration: String(scene.duration_sec),  // string "4"–"15", NOT a number
+  aspect_ratio: "9:16",
+  generate_audio: false,
+  bitrate_mode: "standard",
+  end_user_id: "mintads-headout",        // required for early-access endpoint
 }
 
-async function generateVideoClip(input: VideoGenInput): Promise<VideoClipResult> {
-  const jobSet = await higgsfield.subscribe('seedance-v2.0-i2v', {
-    input: {
-      prompt: input.prompt,
-      images_list: [input.image_url],
-      aspect_ratio: input.aspect_ratio, // "9:16" for master
-      duration: input.duration,
-      quality: input.beat === 'hook' ? 'high' : 'basic', // hero hook gets high quality
-      generate_audio: false, // VO handled by ElevenLabs
-    },
-    withPolling: true,
-  });
-
-  if (!jobSet.isCompleted || !jobSet.jobs[0]?.results?.raw?.url) {
-    throw new Error(`Seedance generation failed for scene ${input.scene_id}: ${jobSet.jobs[0]?.error || 'unknown'}`);
-  }
-
-  const videoUrl = jobSet.jobs[0].results.raw.url;
-
-  // Download to local filesystem
-  const localPath = `/data/runs/${adId}/clips/clip_${String(input.scene_id).padStart(3, '0')}.mp4`;
-  await downloadFile(videoUrl, localPath);
-
-  return {
-    scene_id: input.scene_id,
-    beat: input.beat,
-    file_path: localPath,
-    remote_url: videoUrl,
-    duration_sec: input.duration, // actual duration may differ slightly
-  };
-}
-
-// Orchestrator calls all 3 scenes in parallel
-async function generateAllVideoClips(
-  script: ScriptJson,
-  facts: FactsJson,
-  userInput: UserInput,
-  runId: number,
-  adId: string
-): Promise<VideoClipResult[]> {
-
-  const sceneInputs: VideoGenInput[] = script.video_script.scenes
-    .filter(s => s.beat !== 'cta') // end card is Remotion-generated, not Seedance
-    .map(scene => ({
-      scene_id: scene.scene_id,
-      beat: scene.beat,
-      prompt: scene.visual_direction,
-      image_url: facts.photos[scene.photo_reference_index]?.url || facts.photos[0].url,
-      duration: scene.duration_sec,
-      aspect_ratio: '9:16', // master aspect ratio — Remotion handles 1:1, 16:9
-    }));
-
-  // Fire all in parallel
-  const results = await Promise.allSettled(
-    sceneInputs.map(async (input) => {
-      await updateStageLog(runId, adId, `video_gen_scene_${input.scene_id}`, 'in_progress');
-      try {
-        const clip = await generateVideoClip(input);
-
-        // Sanity check: file exists, non-zero bytes
-        const stats = await fs.stat(clip.file_path);
-        if (stats.size === 0) throw new Error('Generated clip is 0 bytes');
-
-        const cost = input.duration * (input.beat === 'hook' ? 0.30 : 0.15); // high vs basic
-        await trackCost(runId, adId, `video_gen_scene_${input.scene_id}`, 'higgsfield',
-          cost, { scene_id: input.scene_id, duration: input.duration, quality: input.beat === 'hook' ? 'high' : 'basic' });
-
-        await updateStageLog(runId, adId, `video_gen_scene_${input.scene_id}`, 'completed');
-        return clip;
-      } catch (error) {
-        // Retry once
-        try {
-          const clip = await generateVideoClip(input);
-          await trackCost(runId, adId, `video_gen_scene_${input.scene_id}`, 'higgsfield',
-            input.duration * 0.15, { scene_id: input.scene_id, retry: true });
-          await updateStageLog(runId, adId, `video_gen_scene_${input.scene_id}`, 'completed', { retried: true });
-          return clip;
-        } catch (retryError) {
-          await updateStageLog(runId, adId, `video_gen_scene_${input.scene_id}`, 'failed', { error: retryError.message });
-          throw retryError;
-        }
-      }
-    })
-  );
-
-  // Collect successful clips; allow partial (assembly can work with fewer)
-  const clips = results
-    .filter((r): r is PromiseFulfilledResult<VideoClipResult> => r.status === 'fulfilled')
-    .map(r => r.value);
-
-  if (clips.length === 0) {
-    throw new Error('All video generation calls failed');
-  }
-
-  return clips.sort((a, b) => a.scene_id - b.scene_id);
+// image-to-video (all other shot types)
+{
+  prompt: fullPrompt,
+  image_url: string,           // single venue photo URL (not an array)
+  resolution: "720p",
+  duration: String(scene.duration_sec),
+  aspect_ratio: "9:16",
+  generate_audio: false,
+  bitrate_mode: "standard",
 }
 ```
 
-**Timing**: ~60–120 seconds per clip. Since all 3 run in parallel, total wall time ≈ slowest clip.
+#### Output
 
-**Cost per variant (video)**: 3 clips × ~6s average × $0.15–0.30/sec = **$2.70–5.40**
+```typescript
+result.data.video.url  // CDN MP4 URL — download to /data/runs/{adId}/clips/clip_00N.mp4
+```
+
+#### Fallback
+
+If `reference-to-video` returns a 403 (early-access gate), the scene retries with `image-to-video` using the first venue photo. Creator consistency degrades to prompt-only — no code path change, just endpoint + image_urls swap.
+
+**Timing**: ~60–120s per clip. All N scenes run in parallel → total wall time ≈ slowest clip.
+
+**Cost per variant**: ~7s avg × N scenes × $0.2419/sec
+- 4 content scenes: ~$6.77
+- 5 content scenes: ~$8.47
 
 ---
 

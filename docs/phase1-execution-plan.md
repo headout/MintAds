@@ -67,9 +67,21 @@ Similarity boost: 0.75
 
 ```
 Model: "seedance-v2.0-i2v"
-Quality: "high" for hook scene, "basic" for body/payoff
+Quality: "high" for hook scene, "basic" for body/payoff/experience_detail scenes
 Aspect ratio: "9:16" (master — Remotion crops for others)
 generate_audio: false
+Duration: 4–10s per scene (dynamic — set by script.json per scene)
+images_list: 1–2 photos per scene (venue photos from facts.photos[]; creator identity via SoulId)
+```
+
+### Higgsfield SoulId (creator identity)
+
+```
+SoulId is a pre-registered creator reference used to reproduce the same person across all Higgsfield calls.
+Setup: store 2–3 reference creator images in static/creators/{creator_id}/
+On server start: call higgsfield.createSoulId() → cache soul_id in DB config table under key "higgsfield_soul_id"
+Pass soul_id in every Seedance call where scene.shot_type === "ugc_creator"
+Skip soul_id for b_roll, pov, experience_detail scenes (no creator in frame)
 ```
 
 ---
@@ -279,48 +291,67 @@ Requires: Node 16+, headless Chrome (Remotion installs this)
 **Output**: `ScriptJson` (validated) + `ClaimReport`
 **Dependencies**: Chunk 1 (needs facts.json)
 
-#### script.json — `video_script.global_style` addition (Chunk 2.1)
+#### Key script.json design decisions (updated)
 
-Claude must also generate a `global_style` block alongside `scenes[]`. This block is consumed by Chunk 3 and Chunk 5 to ensure all segments feel like one coherent ad.
+**Dynamic scene count**: Claude decides 4 or 5 content scenes (+ 1 end card) based on what the experience needs. No fixed 3-scene structure. Total ad: 30–40s.
 
+**Scene duration envelope**: Each content scene is 4–10s. Total content scenes: 26–36s. CTA end card: 4s fixed.
+
+**Shot types**: Every scene has a `shot_type` — `ugc_creator | b_roll | pov | experience_detail`. This drives Higgsfield prompt construction and image selection in Chunk 3.
+
+**Multiple photo references**: `photo_reference_indices: number[]` (array, was single index). Claude picks 1–2 venue photo indices per scene based on shot_type and photo keyword/alt match.
+
+**`global_style` block** (consumed by Chunk 3 + Chunk 5):
 ```json
 "global_style": {
   "creator_description": "25-year-old solo female traveller, white linen shirt, slim-fit jeans, light daypack, warm Mediterranean tan. Same person, same outfit in every scene.",
   "aesthetic": "UGC handheld 9:16, warm natural Mediterranean light, slightly shaky camera, cinematic but authentic",
-  "background_music_volume": [0.2, 0.2, 0.35]
+  "background_music_volume": [0.2, 0.15, 0.2, 0.4]
 }
 ```
+- `creator_description`: specific enough for SoulId + Higgsfield to reproduce the same person across all calls
+- `aesthetic`: prepended verbatim to every Higgsfield prompt
+- `background_music_volume`: **dynamic length** — one float per non-cta scene (4 or 5 values depending on scene count)
 
-- `creator_description`: specific enough for Higgsfield to reproduce the same person across 3 independent calls. Claude derives this from persona + experience location + angle tone.
-- `aesthetic`: shared visual style prefix prepended to every Higgsfield prompt.
-- `background_music_volume`: per-scene float (0–1). Higgsfield bakes ambient/music audio into clips; Remotion uses these values when mixing VO on top. Lower during heavy VO scenes (hook/body), higher for payoff.
-
-**System prompt addition for Chunk 2.1**: Add `global_style` to the output schema. Instruct Claude to define a consistent creator persona fitting the selected `persona` + experience location, and a visual aesthetic matching the angle/hook energy.
-
-**Types addition**: Add `GlobalStyle` interface to `types.ts`; extend `VideoScript` to include `global_style: GlobalStyle`.
+**Validator rules**:
+- Exactly 1 hook, 1 payoff, 1 cta; 2–3 body scenes
+- Total video duration (all scenes incl cta): 30–40s
+- Non-cta content total: 26–36s
+- VO total: 26–36s
+- `photo_reference_indices` in range, `[]` for cta
+- `background_music_volume` length = non-cta scene count
 
 ---
 
 ### Chunk 3: Video Engine
 **Scope**: `higgsfield-client.ts` module. Takes a scene object + global_style + facts metadata. Assembles the full Higgsfield prompt (global prefix + scene direction). Calls Higgsfield SDK `subscribe()` with Seedance 2.0 I2V. Waits for completion via built-in polling. Downloads resulting MP4 to local filesystem. Returns file path + actual duration. Includes retry logic (1 retry per scene). Sanity check (file exists, non-zero bytes).
 
-The orchestrator calls this 3 times in parallel (one per scene) via `Promise.all`.
+The orchestrator calls this N times in parallel (one per non-cta scene) via `Promise.allSettled`. N is dynamic (4–5) based on what `script.json` produced.
 
-**Input**: `{ scene, global_style, experience_photo_url, soul_id?, duration, aspect_ratio }` per scene
-**Output**: `{ file_path, duration_sec }` per clip
-**Dependencies**: Chunk 2 (needs script.json for visual_direction + global_style + photo_reference_index), Chunk 1 (needs facts.json for photo URLs)
+**Input**: `{ scene, global_style, facts, soul_id? }` per scene — photo URLs resolved from `scene.photo_reference_indices`
+**Output**: `{ file_path, duration_sec, scene_id, beat, shot_type }` per clip
+**Dependencies**: Chunk 2 (needs script.json for visual_direction, global_style, shot_type, photo_reference_indices), Chunk 1 (needs facts.json for photo URLs)
 
-#### Creator consistency — SoulId (Chunk 3 key decision)
+#### Creator consistency — SoulId
 
-The Higgsfield SDK exposes `createSoulId({ name, input_images })` → `/v1/custom-references`. A SoulId is a pre-registered creator character that can be referenced in every Seedance call, producing the same person across all segments.
+The Higgsfield SDK exposes `createSoulId({ name, input_images })` → `/v1/custom-references`. A SoulId pre-registers a creator character that reproduces the same person across all Seedance calls.
 
 **Setup (one-time, pre-configured)**:
-- Store 2–3 reference images of the chosen creator in `static/creators/{creator_id}/`
-- On server startup (or first run), call `higgsfield.createSoulId()` with those images → get `soul_id`
-- Cache the `soul_id` (store in DB `config` table under key `higgsfield_soul_id`)
-- Pass `soul_id` in every Seedance generation call
+- Store 2–3 reference creator images in `static/creators/{creator_id}/`
+- On server startup: call `higgsfield.createSoulId()` with those images → get `soul_id`
+- Cache `soul_id` in DB `config` table under key `higgsfield_soul_id`
+- Pass `soul_id` ONLY on scenes where `shot_type === "ugc_creator"` — skip for b_roll/pov/experience_detail
 
-This eliminates the creator inconsistency problem at the model level without prompt engineering hacks.
+#### `images_list` construction — by shot_type
+
+| shot_type | images_list | Notes |
+|---|---|---|
+| `ugc_creator` | venue photos from `photo_reference_indices` (1–2) | Creator identity comes from SoulId, not images_list |
+| `b_roll` | venue photos from `photo_reference_indices` (1–2) | Two complementary angles produce richer generation |
+| `pov` | 1 venue photo from `photo_reference_indices` | Single strong reference; camera IS the creator's eyes |
+| `experience_detail` | 1 venue photo from `photo_reference_indices` | Most detail-rich photo |
+
+Cost: Higgsfield charges by output duration × quality tier only. Extra input images do not increase cost.
 
 #### Full Higgsfield prompt assembly
 
@@ -330,7 +361,7 @@ Each scene call constructs its prompt as:
 {global_style.aesthetic}.
 Creator: {global_style.creator_description}.
 Location: {facts.city} — {facts.title}.
-Photo context: {photo.keyword}.
+Photo context: {photo.keyword for each photo in images_list}.
 Do NOT embed any text, captions, subtitles, titles, or watermarks in the frame.
 No speech or lip-sync audio. Background music only.
 Creator shows only natural authentic human reactions — genuine awe, wonder, excitement.
@@ -340,22 +371,16 @@ All scenes share the same visual theme and color grade to cut together seamlessl
 {scene.visual_direction}
 ```
 
-#### `images_list` — image count and cost
-
-- **Limit**: The SDK types do not explicitly cap `images_list`. For Seedance I2V, 1–2 images is the practical range. Sending 2 images (e.g. two complementary venue shots) can help the model blend context, but 1 strong image is usually better than 2 mediocre ones. **Confirm actual limit via Higgsfield docs before Chunk 3 build.**
-- **Cost**: Higgsfield pricing is based on output video duration × quality tier only. Additional input images do not affect cost.
-- **Recommended default**: 1 experience photo per scene (matched via `photo_reference_index`). If a scene has `photo_reference_index: null` (CTA beat), skip the Higgsfield call entirely — that scene is Remotion-rendered.
-
 #### Hard constraints baked into every call
 
 | Constraint | How enforced |
 |---|---|
 | No embedded text/captions | Hard string in global prefix |
 | No speech audio | `generate_audio: false` param + prompt instruction |
-| Appropriate behaviour only | Hard string in global prefix |
-| Consistent creator | `soul_id` param + `creator_description` in prefix |
+| Consistent creator | `soul_id` param on ugc_creator scenes + `creator_description` in prefix |
 | Consistent aesthetic | `global_style.aesthetic` prefix on every call |
-| Same seed for style consistency | Pass same `seed` value to all 3 scene calls |
+| Quality tier | hook → `"high"`, all others → `"basic"` |
+| Master aspect ratio | `"9:16"` always — Remotion handles 1:1, 16:9 |
 
 ---
 

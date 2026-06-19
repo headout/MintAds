@@ -51,19 +51,22 @@ export interface UserInput {
 
 // --- Script Engine types ---
 
+export type ShotType = 'ugc_creator' | 'b_roll' | 'pov' | 'experience_detail';
+
 export interface GlobalStyle {
-  creator_description: string; // specific enough to reproduce the same person across 3 Higgsfield calls
-  aesthetic: string;           // shared visual style prefix for all scene prompts
-  background_music_volume: number[]; // per non-cta scene (hook, body, payoff), 0.0–1.0
+  creator_description: string; // specific enough to reproduce the same person via SoulId across all Higgsfield calls
+  aesthetic: string;           // shared visual style prefix prepended to every scene's visual_direction
+  background_music_volume: number[]; // one float (0.0–1.0) per non-cta scene, in scene order
 }
 
 export interface SceneJson {
   scene_id: number;
   beat: 'hook' | 'body' | 'payoff' | 'cta';
+  shot_type: ShotType;
   duration_sec: number;
   visual_direction: string;
   text_overlay: string | null;
-  photo_reference_index: number | null;
+  photo_reference_indices: number[]; // 0-based into facts.photos[]; empty [] only for cta
 }
 
 export interface VoSegment {
@@ -125,6 +128,15 @@ export interface ClaimReport {
 export interface ScriptEngineResult {
   script: ScriptJson;
   claim_report: ClaimReport;
+}
+
+export interface VideoClipResult {
+  scene_id: number;
+  beat: string;
+  shot_type: ShotType;
+  file_path: string;
+  remote_url: string;
+  duration_sec: number;
 }
 
 export interface AngleDef {
