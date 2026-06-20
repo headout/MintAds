@@ -430,6 +430,15 @@ function claimMatchesValue(claimText: string, factsValue: unknown): boolean {
       const stated = parseFloat(approxMatch[1]);
       if (!isNaN(stated) && factsNum > 0 && Math.abs(factsNum - stated) / factsNum <= 0.15) return true;
     }
+
+    // Plain numeric proximity: any number in the claim within ±25% of the facts value.
+    // Handles Claude rounding ("38,000" for 38,672; "€20" for €19.90).
+    const claimNumMatches = [...claimNorm.matchAll(/[\d]+(?:[.,]\d+)*/g)]
+      .map(m => parseFloat(m[0].replace(/,/g, '')))
+      .filter(n => !isNaN(n));
+    for (const claimNum of claimNumMatches) {
+      if (factsNum > 0 && Math.abs(factsNum - claimNum) / factsNum <= 0.25) return true;
+    }
   }
 
   // Word-overlap fallback: at least one significant word (>3 chars) from claim in value
