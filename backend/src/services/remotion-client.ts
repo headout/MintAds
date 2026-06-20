@@ -13,6 +13,7 @@ import type {
   UserInput,
   OutputFile,
   AssemblyResult,
+  FactsJson,
 } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -200,21 +201,46 @@ export async function assembleAd(
       });
     }
 
+    // Extract a ground-level photo and title from facts.json for the end card
+    let experienceImageSrc: string | undefined;
+    let experienceName: string | undefined;
+    try {
+      const factsRaw = JSON.parse(
+        await fs.readFile(path.join(DATA_RUNS_DIR, adId, 'facts.json'), 'utf-8'),
+      ) as FactsJson;
+      experienceName = factsRaw.short_title ?? factsRaw.title;
+      const aerialPattern = /aerial|panoramic from top|overhead|bird'?s?\s*eye|from above|drone|view from|roman forum and palatine/i;
+      const groundPhoto = factsRaw.photos.find(
+        p => !aerialPattern.test(p.keyword) && !aerialPattern.test(p.alt),
+      );
+      if (groundPhoto) experienceImageSrc = groundPhoto.url;
+    } catch {
+      // non-fatal — end card renders without photo
+    }
+
     // Build inputProps — shape must match AdProps in remotion/src/AdComposition.tsx
     const inputProps = {
-      clips: sortedClips.map(c => ({
-        src: mediaServer.toUrl(c.file_path),
-        durationSec: c.duration_sec,
-        beat: c.beat,
-        sceneId: c.scene_id,
-      })),
+      clips: sortedClips.map(c => {
+        const scene = script.video_script.scenes.find(sc => sc.scene_id === c.scene_id);
+        return {
+          src: mediaServer.toUrl(c.file_path),
+          durationSec: c.duration_sec,
+          beat: c.beat,
+          sceneId: c.scene_id,
+          lipSync: scene?.lip_sync === true,
+        };
+      }),
       voSegments: [...voSegments]
         .sort((a, b) => a.scene_id - b.scene_id)
-        .map(s => ({
-          sceneId: s.scene_id,
-          filePath: mediaServer.toUrl(s.file_path),
-          durationSec: s.duration_sec,
-        })),
+        .map(s => {
+          const scene = script.video_script.scenes.find(sc => sc.scene_id === s.scene_id);
+          return {
+            sceneId: s.scene_id,
+            filePath: mediaServer.toUrl(s.file_path),
+            durationSec: s.duration_sec,
+            lipSync: scene?.lip_sync === true,
+          };
+        }),
       textOverlays,
       endCard: {
         priceDisplay: script.end_card.price_display,
@@ -223,6 +249,8 @@ export async function assembleAd(
         ctaText: script.end_card.cta_text,
         brandLogo: script.end_card.brand_logo,
         cancellationText: script.end_card.cancellation_text ?? null,
+        experienceImageSrc,
+        experienceName,
       },
       fps,
     };
