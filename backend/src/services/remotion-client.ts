@@ -189,13 +189,23 @@ export async function assembleAd(
     const totalDurationSec = totalFrames / fps;
 
     // Text overlays anchored to actual clip timing (not script target durations)
-    const textOverlays: Array<{ text: string; startSec: number; durationSec: number }> = [];
+    const textOverlays: Array<{
+      text: string;
+      keyword: string;
+      keywordColor: string;
+      position: 'top' | 'center' | 'bottom';
+      startSec: number;
+      durationSec: number;
+    }> = [];
     for (const scene of script.video_script.scenes) {
       if (scene.beat === 'cta' || !scene.text_overlay) continue;
       const startSec = sceneStartSec.get(scene.scene_id);
       if (startSec === undefined) continue; // clip missing — skip overlay
       textOverlays.push({
-        text: scene.text_overlay,
+        text: scene.text_overlay.text,
+        keyword: scene.text_overlay.keyword,
+        keywordColor: scene.text_overlay.keywordColor,
+        position: scene.text_overlay.position,
         startSec,
         durationSec: scene.duration_sec,
       });

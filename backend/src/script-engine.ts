@@ -85,7 +85,7 @@ Visual direction for each shot_type — include the grade note for your scene's 
     Append to visual_direction: "Harsh midday sun softened — no hard shadows on faces. Slight atmospheric haze in background. Sky slightly overexposed for a summer travel feel. Ground: warm concrete tones, not grey."
 
   Body scenes (beat: body):
-    Append to visual_direction: "Interior or exterior lighting: warm tungsten mixed with natural window light, shadows lifted never crushed. Mood: alive and excited, not dark. Moving handheld — natural micro-shake, not stabilised."
+    Append to visual_direction: "Interior or exterior lighting: warm tungsten mixed with natural window light, shadows lifted never crushed. Mood: alive and excited, not dark. Slow moving handheld — gentle drift, not a shake. Camera moves at a walking pace or slower — no fast pans, no rapid reframes."
 
   Payoff scenes (beat: payoff):
     Append to visual_direction: "Golden hour light. Subtle organic lens flare — warm edge highlights kissing the subject. Warmth pushed to maximum natural — feels like a memory, not a photo."
@@ -99,6 +99,8 @@ Visual direction for each shot_type — include the grade note for your scene's 
                                     Reactions must read as a real human having a genuine moment: a brief smile, a slow turn to take in the view,
                                     a quiet nod. NOT theatrical — no sustained exaggerated expressions, no frozen poses, no single emotion
                                     held for the entire clip. Direct the scene so the creator's body language evolves naturally over its duration.
+                                    NEVER direct: hands framing eyes as binoculars, finger-guns, jazz hands, exaggerated pointing, or any
+                                    tourist-pose cliché. These read as AI-generated immediately.
   "b_roll"                        → Describe: what is being shown, camera movement (slow push, tracking, wide establishing), mood
   "pov"                           → Describe: what the camera (as creator's eyes) sees, movement, what is revealed
   "experience_detail"             → Describe: the specific detail, how it's framed (macro, tilt-up, reveal), lighting
@@ -252,6 +254,41 @@ VO SEGMENTS:
   Example: "UGC creator — conversational, slight breathiness, natural pauses between thoughts."
 
 ═══════════════════════════════════════════
+TEXT OVERLAYS — keyword style
+═══════════════════════════════════════════
+Each scene may have a text_overlay. Set it to null if the scene needs no on-screen text.
+When used, ALWAYS use the keyword style — a two-line stack that reads as one thought:
+
+  text    — the white setup phrase. Small, regular weight. A few connecting words that lead
+             into the keyword ("These are the", "Number one —", "They waited"). Keep it short.
+             Use an empty string "" when no setup is needed (e.g. a bare place name as the keyword).
+  keyword — the payoff. 1–4 words. Bold, italic, large, colored. This is what the eye lands on.
+  keywordColor — choose by emotional beat:
+    #FFD700  yellow  — discovery, destinations, positive payoffs. Default. Most-used.
+    #00E5FF  cyan    — facts, features, contrast moments ("skip the line", "glass floor").
+    #FF4A57  red     — alarm, urgency, the pain in a problem-hook ad ("3 hour queue").
+  position — place text where it won't fight the main subject of the clip:
+    "top"     — subject fills the bottom half (landscape reveal, ground-level establishing shot)
+    "center"  — wide or symmetrical shots where edges are clear
+    "bottom"  — subject fills the top (portrait face, creator talking to camera)
+    Default to "center" when uncertain.
+
+The two lines must read as one natural thought when stacked. The setup line lands first, the
+keyword lands second and is the phrase that gets remembered.
+
+GOOD: { "text": "They waited", "keyword": "3 hours.", "keywordColor": "#FF4A57", "position": "center" }
+GOOD: { "text": "", "keyword": "Paris.", "keywordColor": "#FFD700", "position": "top" }
+GOOD: { "text": "all the", "keyword": "cool people", "keywordColor": "#FFD700", "position": "center" }
+BAD:  { "text": "Skip the incredibly long queue at the Colosseum", "keyword": "now" }  ← setup too long
+BAD:  { "text": "you can", "keyword": "walk right past everyone waiting in the line" }  ← keyword too long
+
+When to use overlays:
+  • Use on 2–3 scenes per ad, not every scene — overuse kills impact.
+  • Prioritise b_roll and experience_detail scenes — the overlay carries the message while the footage shows it.
+  • ugc_creator scenes with lip_sync: true rarely need overlays — the creator is already speaking.
+  • The hook scene often benefits from an overlay that reinforces the hook's tension or premise.
+
+═══════════════════════════════════════════
 OUTPUT SCHEMA — output this exact structure
 ═══════════════════════════════════════════
 {
@@ -279,7 +316,7 @@ OUTPUT SCHEMA — output this exact structure
         "lip_sync": true,
         "duration_sec": 5,
         "visual_direction": "Detailed scene direction for fal.ai I2V. Describe subject, action, camera movement, framing. UGC handheld style.",
-        "text_overlay": "string or null",
+        "text_overlay": { "style": "keyword", "text": "setup words or empty string", "keyword": "1–4 word payoff", "keywordColor": "#FFD700", "position": "center" },
         "photo_reference_indices": [0]
       },
       {
@@ -704,7 +741,10 @@ function validateOrphans(script: ScriptJson): string[] {
   const textSources: Array<[string, string]> = [];
 
   for (const sc of script.video_script?.scenes ?? []) {
-    if (sc.text_overlay) textSources.push([sc.text_overlay, `scene ${sc.scene_id} text_overlay`]);
+    if (sc.text_overlay) {
+      const combined = [sc.text_overlay.text, sc.text_overlay.keyword].filter(Boolean).join(' ');
+      if (combined) textSources.push([combined, `scene ${sc.scene_id} text_overlay`]);
+    }
   }
   for (const seg of script.audio_script?.vo_segments ?? []) {
     if (seg.vo_text) textSources.push([seg.vo_text, `vo_segment scene ${seg.scene_id}`]);
@@ -754,7 +794,10 @@ function buildClaimReport(script: ScriptJson, facts: FactsJson): ClaimReport {
 
   const textSources: Array<[string, string]> = [];
   for (const sc of script.video_script?.scenes ?? []) {
-    if (sc.text_overlay) textSources.push([sc.text_overlay, `scene_${sc.scene_id}_text_overlay`]);
+    if (sc.text_overlay) {
+      const combined = [sc.text_overlay.text, sc.text_overlay.keyword].filter(Boolean).join(' ');
+      if (combined) textSources.push([combined, `scene_${sc.scene_id}_text_overlay`]);
+    }
   }
   for (const seg of script.audio_script?.vo_segments ?? []) {
     if (seg.vo_text) textSources.push([seg.vo_text, `vo_segment_scene_${seg.scene_id}`]);
