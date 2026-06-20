@@ -283,7 +283,7 @@ async function generateClip(
   // integer second fal.ai accepts) instead of Claude's target. This guarantees
   // the clip is always exactly as long as the audio, eliminating overlap in Remotion.
   // fal.ai hard cap is 15s. Clamp so an overlong VO never causes Unprocessable Entity.
-  const clipDurationSec = voDurationSec ? Math.min(Math.ceil(voDurationSec), 15) : scene.duration_sec;
+  const clipDurationSec = voDurationSec ? Math.min(Math.max(Math.ceil(voDurationSec), 4), 15) : scene.duration_sec;
   const localPath = path.join(
     DATA_RUNS_DIR,
     adId,
