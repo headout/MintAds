@@ -205,8 +205,13 @@ export async function assembleAd(
     let experienceImageSrc: string | undefined;
     let experienceName: string | undefined;
     try {
+      const normalizedRoot = path.resolve(DATA_RUNS_DIR);
+      const factsPath = path.resolve(DATA_RUNS_DIR, adId, 'facts.json');
+      if (!factsPath.startsWith(normalizedRoot + path.sep)) {
+        throw new Error(`Unsafe facts.json path for adId: ${adId}`);
+      }
       const factsRaw = JSON.parse(
-        await fs.readFile(path.join(DATA_RUNS_DIR, adId, 'facts.json'), 'utf-8'),
+        await fs.readFile(factsPath, 'utf-8'),
       ) as FactsJson;
       experienceName = factsRaw.short_title ?? factsRaw.title;
       const aerialPattern = /aerial|panoramic from top|overhead|bird'?s?\s*eye|from above|drone|view from|roman forum and palatine/i;
