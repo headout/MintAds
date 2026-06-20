@@ -106,6 +106,53 @@ Visual direction for each shot_type — include the grade note for your scene's 
   "experience_detail"             → Describe: the specific detail, how it's framed (macro, tilt-up, reveal), lighting
 
 ═══════════════════════════════════════════
+CINEMATIC B-ROLL STYLE — apply to all non-ugc_creator scenes
+═══════════════════════════════════════════
+This is the reference editing and cinematography style for all b_roll, pov, and experience_detail scenes.
+It reflects a luxury travel reel aesthetic — the kind top creators post from Positano, Amalfi, Kyoto.
+
+CAMERA MOVEMENT:
+  • Slow gimbal pans or walking shots with stabilization — NEVER handheld shake, NEVER shaky cam
+  • Subtle parallax movement: foreground element drifts across frame to reveal scenery behind
+  • Gentle reveals: a pillar, umbrella, or archway slides out of frame to open on a landmark
+  • No speed ramps, whip pans, or aggressive cuts — movement is deliberate and relaxed
+  • Shot duration: 1–2 seconds per clip. Let the scene breathe before the cut.
+
+  ABSOLUTE RULE — NO SHAKY FOOTAGE:
+  Never use words like "shaky", "handheld shake", "unstable", "jittery", "wobbly", or "verite" in any
+  visual_direction. Every shot must feel stabilised — gimbal, tripod, or smooth walking pace.
+  "Micro-shake" from the aesthetic field refers only to the film-grain texture feel, NOT camera instability.
+  Seedance interprets shaky direction literally and produces unwatchable footage.
+
+COMPOSITION RULES (describe these explicitly in visual_direction):
+  • Rule of thirds — subject never dead-center
+  • Leading lines: streets, staircases, colonnades pulling the eye into depth
+  • Foreground framing: restaurant umbrellas, pillars, foliage framing the main subject
+  • Large negative space: sky, sea, or open stone wall as breathing room
+  • Subjects placed near frame edges, not centered
+  Examples: "archway frames the harbour beyond", "olive branch at left edge, ruins recede into distance"
+
+STORYTELLING BEATS for b_roll sequencing — vary across scenes:
+  1. Establishing wide: landmark or neighbourhood from a distance
+  2. Scenic detail: texture, architecture, water, street life
+  3. Movement: slow tracking along a path, staircase, or waterfront
+  4. Reveal: camera moves to uncover the hero view behind a foreground element
+  Do NOT show tourist-crowd chaos — frame to exclude queues or messy backgrounds.
+
+WHAT TO SHOW:
+  ✓ Architecture and facades with clean perspective
+  ✓ Waterfront, narrow streets, café terraces
+  ✓ Scenic reveals: ocean, mountains, skyline
+  ✓ Atmospheric close-ups: a ticket, a dish, worn stone, a doorway
+  ✗ Do NOT show: crowds, generic hotel lobbies, souvenir stands, selfie sticks
+
+SHOT FORMULA — when directing individual scenes, draw on this vocabulary:
+  "slow gimbal pan left across the colonnaded courtyard, pillars framing golden afternoon light"
+  "low-angle push forward along marble steps, tourists' feet out of frame, sky opening at top"
+  "foreground olive branch blurs in and out as camera tracks slowly toward the cliffside village"
+  "tilt-up from mosaic floor detail to reveal domed ceiling — natural window light overhead"
+
+═══════════════════════════════════════════
 LIP SYNC — the lip_sync field
 ═══════════════════════════════════════════
 Every scene MUST include "lip_sync": true or false.
@@ -199,12 +246,17 @@ aesthetic:
   This string is prepended verbatim to every fal.ai scene prompt — every clip will inherit it.
 
   Use this exact base and adapt only the location-specific detail:
-  "Shot on iPhone 15 Pro, natural exposure, slight warm drift toward 5500–6000K, lifted teal-green shadows (never crushed black), soft ivory highlight roll-off, slight film grain (ISO 400), handheld micro-shake — raw UGC feel, not colour-graded."
+  "Shot on iPhone 15 Pro, natural exposure, slight warm drift toward 5500–6000K, lifted teal-green shadows (never crushed black), soft ivory highlight roll-off, slight film grain (ISO 400), stabilised smooth movement — raw UGC feel, not colour-graded."
 
-  GOOD: "Shot on iPhone 15 Pro, natural exposure, slight warm drift, lifted teal shadows, soft ivory highlights, film grain, handheld micro-shake — raw UGC feel at the Colosseum."
+  GOOD: "Shot on iPhone 15 Pro, natural exposure, slight warm drift, lifted teal shadows, soft ivory highlights, film grain, stabilised smooth movement — raw UGC feel at the Colosseum."
   BAD:  "nice video" / "vibrant cinematic footage" / "high contrast 4K"
 
+  NOTE: "film grain" and "raw UGC feel" describe colour and texture only — they do NOT imply camera shake.
+  Every shot must be stabilised (gimbal or warp-stabilised). Never write "handheld shake", "shaky",
+  "jittery", or "wobbly" anywhere in visual_direction or aesthetic.
+
   NEVER use in aesthetic (or anywhere in visual_direction):
+    ✗ "shaky" / "handheld shake" / "jittery" / "wobbly" / "verite" — Seedance produces unwatchable footage
     ✗ "vibrant colors" — oversaturated, fake
     ✗ "high contrast" — punchy digital, not filmic
     ✗ "sharp and crisp" — sharpening artifacts
@@ -220,6 +272,27 @@ background_music_volume:
   Rule of thumb: 0.15–0.25 for scenes with heavy VO (hook, body), 0.30–0.45 for payoff where music can breathe.
   Example for 4 content scenes: [0.2, 0.15, 0.2, 0.4]
   Example for 5 content scenes: [0.2, 0.15, 0.2, 0.2, 0.4]
+
+bg_music_theme:
+  Select exactly one of these three string values based on the angle + journey_type:
+
+    "wanderlust_folk"   — soft, intimate, melancholic warmth. Reflective or emotional angles.
+    "good_times_upbeat" — high energy, funky, action-oriented. Urgency or spontaneous angles.
+    "blue_sunset_house" — modern, aspirational, versatile. Discovery or worth-it angles.
+
+  Selection rules (angle ID → theme):
+    A1 + pre_trip      → wanderlust_folk
+    A1 + in_trip       → blue_sunset_house
+    A2 + pre_trip      → wanderlust_folk
+    A2 + in_trip       → good_times_upbeat
+    A3 (any journey)   → good_times_upbeat
+    A4 (any journey)   → blue_sunset_house
+    A5 (any journey)   → good_times_upbeat
+    A7 (any journey)   → wanderlust_folk
+    A8 (any journey)   → wanderlust_folk
+    A10 (any journey)  → blue_sunset_house
+    A14 (any journey)  → good_times_upbeat
+    Any other angle    → blue_sunset_house
 
 ═══════════════════════════════════════════
 CLAIM TRACING (mandatory)
@@ -306,7 +379,8 @@ OUTPUT SCHEMA — output this exact structure
     "global_style": {
       "creator_description": "specific creator description — age, presentation, exact clothing, accessories, energy",
       "aesthetic": "shared visual style sentence prepended to every fal.ai scene prompt",
-      "background_music_volume": [0.2, 0.15, 0.2, 0.4]
+      "background_music_volume": [0.2, 0.15, 0.2, 0.4],
+      "bg_music_theme": "wanderlust_folk"
     },
     "scenes": [
       {
@@ -674,6 +748,10 @@ function validateStructural(script: ScriptJson, facts: FactsJson): string[] {
         if (typeof val !== 'number' || val < 0 || val > 1)
           v.push(`global_style.background_music_volume contains invalid value "${val}" — must be 0.0–1.0`);
       }
+    }
+    const validThemes = ['wanderlust_folk', 'good_times_upbeat', 'blue_sunset_house'];
+    if (!gs.bg_music_theme || !validThemes.includes(gs.bg_music_theme)) {
+      v.push(`global_style.bg_music_theme must be one of: ${validThemes.join(', ')}`);
     }
   }
 

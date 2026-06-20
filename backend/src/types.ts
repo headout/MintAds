@@ -57,6 +57,7 @@ export interface GlobalStyle {
   creator_description: string; // specific enough to reproduce the same person across all fal.ai calls
   aesthetic: string;           // shared visual style prefix prepended to every fal.ai scene prompt
   background_music_volume: number[]; // one float (0.0–1.0) per non-cta scene, in scene order
+  bg_music_theme: 'wanderlust_folk' | 'good_times_upbeat' | 'blue_sunset_house';
 }
 
 export interface SceneJson {

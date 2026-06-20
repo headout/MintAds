@@ -6,7 +6,7 @@ export function RemotionRoot() {
   const defaultProps: AdProps = {
     clips: [],
     voSegments: [],
-    bgMusicSrc: '',
+    bgMusicTheme: undefined,
     bgMusicVolume: 0.12,
     textOverlays: [],
     endCard: {

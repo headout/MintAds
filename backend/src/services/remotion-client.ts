@@ -257,6 +257,7 @@ export async function assembleAd(
           };
         }),
       textOverlays,
+      bgMusicTheme: script.video_script.global_style.bg_music_theme ?? undefined,
       endCard: {
         priceDisplay: script.end_card.price_display,
         ratingDisplay: script.end_card.rating_display,
