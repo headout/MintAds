@@ -44,7 +44,7 @@ export const AdComposition: React.FC<AdProps> = ({
   clips,
   voSegments,
   bgMusicTheme,
-  bgMusicVolume = 0.3,
+  bgMusicVolume = 0.4,
   textOverlays,
   endCard,
   fps,

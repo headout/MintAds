@@ -7,7 +7,7 @@ export function RemotionRoot() {
     clips: [],
     voSegments: [],
     bgMusicTheme: undefined,
-    bgMusicVolume: 0.3,
+    bgMusicVolume: 0.4,
     textOverlays: [],
     endCard: {
       priceDisplay: '€45',
