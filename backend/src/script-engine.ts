@@ -79,7 +79,21 @@ Assignment guidance:
   • Payoff: prefer "ugc_creator" with lip_sync: true (creator closing to camera) or "b_roll" (cinematic reveal)
   • CTA: shot_type is irrelevant (Remotion end card) — set to "experience_detail" as a placeholder
 
-Visual direction for each shot_type:
+Visual direction for each shot_type — include the grade note for your scene's beat:
+
+  Hook scenes (beat: hook):
+    Append to visual_direction: "Harsh midday sun softened — no hard shadows on faces. Slight atmospheric haze in background. Sky slightly overexposed for a summer travel feel. Ground: warm concrete tones, not grey."
+
+  Body scenes (beat: body):
+    Append to visual_direction: "Interior or exterior lighting: warm tungsten mixed with natural window light, shadows lifted never crushed. Mood: alive and excited, not dark. Moving handheld — natural micro-shake, not stabilised."
+
+  Payoff scenes (beat: payoff):
+    Append to visual_direction: "Golden hour light. Subtle organic lens flare — warm edge highlights kissing the subject. Warmth pushed to maximum natural — feels like a memory, not a photo."
+
+  B-roll and detail shots (shot_type: b_roll, experience_detail, pov):
+    Append to visual_direction: "Slow rack focus from foreground detail to background. Shallow depth of field. Colors slightly muted — desaturated greens, warm stone tones. Feels like a travel magazine, not a tourist snapshot."
+
+  Per shot_type direction:
   "ugc_creator" (lip_sync: true)  → Creator speaks directly to camera. Describe: what they say, energy, gesture, framing. Mouth moves with VO.
   "ugc_creator" (lip_sync: false) → Creator visible but NOT speaking. Describe: natural reactions — awe, walking, looking around.
                                     Reactions must read as a real human having a genuine moment: a brief smile, a slow turn to take in the view,
@@ -180,9 +194,21 @@ creator_description:
 
 aesthetic:
   One sentence covering the shared visual style for ALL scenes. Include: camera style, lighting quality, colour temperature, mood.
-  This string is prepended verbatim to every fal.ai scene prompt.
-  GOOD: "UGC handheld 9:16, warm golden-hour Mediterranean light, slightly shaky authentic camera, cinematic grading"
-  BAD:  "nice video"
+  This string is prepended verbatim to every fal.ai scene prompt — every clip will inherit it.
+
+  Use this exact base and adapt only the location-specific detail:
+  "Shot on iPhone 15 Pro, natural exposure, slight warm drift toward 5500–6000K, lifted teal-green shadows (never crushed black), soft ivory highlight roll-off, slight film grain (ISO 400), handheld micro-shake — raw UGC feel, not colour-graded."
+
+  GOOD: "Shot on iPhone 15 Pro, natural exposure, slight warm drift, lifted teal shadows, soft ivory highlights, film grain, handheld micro-shake — raw UGC feel at the Colosseum."
+  BAD:  "nice video" / "vibrant cinematic footage" / "high contrast 4K"
+
+  NEVER use in aesthetic (or anywhere in visual_direction):
+    ✗ "vibrant colors" — oversaturated, fake
+    ✗ "high contrast" — punchy digital, not filmic
+    ✗ "sharp and crisp" — sharpening artifacts
+    ✗ "bright and cheerful" — overexposed tourist look
+    ✗ "HDR" — tonemapped, artificial
+    ✗ "4K ultra sharp" — wastes tokens, implies post-processing
 
 background_music_volume:
   Array of floats (0.0–1.0), one value per non-cta scene IN SCENE ORDER.
