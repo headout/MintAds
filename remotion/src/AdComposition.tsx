@@ -1,6 +1,12 @@
 import React from 'react';
-import { AbsoluteFill, Audio, OffthreadVideo, Sequence, interpolate, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, Audio, OffthreadVideo, Sequence, interpolate, staticFile, useCurrentFrame } from 'remotion';
 import { EndCard, EndCardProps } from './EndCard';
+
+const MUSIC_FILES: Record<string, string> = {
+  wanderlust_folk:   'wanderlust-justin-lee-main-version-29117-01-40.mp3',
+  good_times_upbeat: 'let-good-times-roll-ra-main-version-02-57-13553.mp3',
+  blue_sunset_house: 'blue-sunset-matrika-main-version-45592-02-16.mp3',
+};
 
 export interface VoSegmentDef {
   sceneId: number;
@@ -20,7 +26,7 @@ export interface ClipDef {
 export interface AdProps {
   clips: ClipDef[];
   voSegments: VoSegmentDef[]; // one per content scene (all non-cta scenes)
-  bgMusicSrc?: string;
+  bgMusicTheme?: string;
   bgMusicVolume?: number; // 0–1, default 0.12
   textOverlays: Array<{
     text: string;
@@ -37,7 +43,7 @@ export interface AdProps {
 export const AdComposition: React.FC<AdProps> = ({
   clips,
   voSegments,
-  bgMusicSrc,
+  bgMusicTheme,
   bgMusicVolume = 0.12,
   textOverlays,
   endCard,
@@ -103,8 +109,8 @@ export const AdComposition: React.FC<AdProps> = ({
       })}
 
       {/* Background music — plays throughout at low volume */}
-      {bgMusicSrc && (
-        <Audio src={bgMusicSrc} volume={bgMusicVolume} />
+      {bgMusicTheme && MUSIC_FILES[bgMusicTheme] && (
+        <Audio src={staticFile(MUSIC_FILES[bgMusicTheme])} volume={bgMusicVolume} />
       )}
 
       {/* Text overlays — keyword style, fade in over first 8 frames */}
