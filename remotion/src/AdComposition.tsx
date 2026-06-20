@@ -22,7 +22,14 @@ export interface AdProps {
   voSegments: VoSegmentDef[]; // one per content scene (all non-cta scenes)
   bgMusicSrc?: string;
   bgMusicVolume?: number; // 0–1, default 0.12
-  textOverlays: Array<{ text: string; startSec: number; durationSec: number }>;
+  textOverlays: Array<{
+    text: string;
+    keyword: string;
+    keywordColor: string;
+    position: 'top' | 'center' | 'bottom';
+    startSec: number;
+    durationSec: number;
+  }>;
   endCard: EndCardProps;
   fps: number;
 }
@@ -100,36 +107,73 @@ export const AdComposition: React.FC<AdProps> = ({
         <Audio src={bgMusicSrc} volume={bgMusicVolume} />
       )}
 
-      {/* Text overlays — fade in over the first 8 frames */}
-      {textOverlays.filter((o) => o.text).map((overlay, i) => (
+      {/* Text overlays — keyword style, fade in over first 8 frames */}
+      {textOverlays.filter((o) => o.keyword).map((overlay, i) => (
         <Sequence
           from={Math.round(overlay.startSec * fps)}
           durationInFrames={Math.round(overlay.durationSec * fps)}
           key={`text-${i}`}
         >
-          <TextOverlay text={overlay.text} />
+          <TextOverlay
+            text={overlay.text}
+            keyword={overlay.keyword}
+            keywordColor={overlay.keywordColor}
+            position={overlay.position}
+          />
         </Sequence>
       ))}
     </AbsoluteFill>
   );
 };
 
-const TextOverlay: React.FC<{ text: string }> = ({ text }) => {
+const POSITION_STYLE: Record<'top' | 'center' | 'bottom', React.CSSProperties> = {
+  top:    { justifyContent: 'flex-start', paddingTop: 120 },
+  center: { justifyContent: 'center' },
+  bottom: { justifyContent: 'flex-end', paddingBottom: 140 },
+};
+
+const TextOverlay: React.FC<{
+  text: string;
+  keyword: string;
+  keywordColor: string;
+  position: 'top' | 'center' | 'bottom';
+}> = ({ text, keyword, keywordColor, position }) => {
   const frame = useCurrentFrame();
   const opacity = interpolate(frame, [0, 8], [0, 1], { extrapolateRight: 'clamp' });
 
+  const shadow = '0 2px 12px rgba(0,0,0,0.85)';
+
   return (
-    <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', padding: '0 40px 120px 40px' }}>
-      <div style={{
-        color: 'white',
-        fontSize: 52,
-        fontWeight: 800,
-        textAlign: 'center',
-        textShadow: '0 2px 8px rgba(0,0,0,0.8)',
-        opacity,
-        fontFamily: 'Inter, system-ui, sans-serif',
-      }}>
-        {text}
+    <AbsoluteFill style={{
+      alignItems: 'center',
+      padding: '0 48px',
+      ...POSITION_STYLE[position],
+    }}>
+      <div style={{ opacity, textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
+        {/* Setup line — white, smaller, regular weight */}
+        {text !== '' && (
+          <div style={{
+            color: 'white',
+            fontSize: 46,
+            fontWeight: 500,
+            lineHeight: 1.15,
+            textShadow: shadow,
+            marginBottom: 4,
+          }}>
+            {text}
+          </div>
+        )}
+        {/* Keyword line — colored, large, bold italic */}
+        <div style={{
+          color: keywordColor,
+          fontSize: 72,
+          fontWeight: 900,
+          fontStyle: 'italic',
+          lineHeight: 1.1,
+          textShadow: shadow,
+        }}>
+          {keyword}
+        </div>
       </div>
     </AbsoluteFill>
   );

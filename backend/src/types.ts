@@ -66,7 +66,13 @@ export interface SceneJson {
   lip_sync: boolean; // true only when shot_type=ugc_creator AND creator speaks directly to camera
   duration_sec: number;
   visual_direction: string;
-  text_overlay: string | null;
+  text_overlay: {
+    style: 'keyword';
+    text: string;          // white setup words (may be empty string)
+    keyword: string;       // bold italic colored payoff — 1–4 words
+    keywordColor: string;  // hex color: #FFD700 | #00E5FF | #FF4A57
+    position: 'top' | 'center' | 'bottom';
+  } | null;
   photo_reference_indices: number[]; // 0-based into facts.photos[]; empty [] only for cta
 }
 
