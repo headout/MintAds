@@ -212,6 +212,13 @@ CLAIM TRACING (mandatory)
 VO SEGMENTS:
 - Write vo_segments for beats hook, body, payoff ONLY — NOT cta
 - Sum of vo_segment target_duration_sec: 26–36s (covers all non-cta scenes)
+- Each vo_segment.target_duration_sec MUST equal the matching scene's duration_sec exactly.
+  Example: scene 1 has duration_sec: 6 → vo_segment for scene_id 1 must have target_duration_sec: 6.
+- CHARACTER BUDGET — ElevenLabs speaks at ~13 chars/sec at natural UGC pace. Write vo_text to fit:
+    5s →  ≤65 chars  |  6s →  ≤78 chars  |  7s →  ≤91 chars
+    8s → ≤104 chars  |  9s → ≤117 chars  | 10s → ≤130 chars
+  HARD CAP: no single segment may exceed 10 seconds or 130 characters.
+  Exceeding this causes the video clip to fail at generation. Write tight, punchy UGC lines — not essays.
 - pause_after_sec: optional float — the natural pause after this segment before the next begins.
   Use 0.2–0.4s at beat boundaries (hook→body, body→payoff). Omit or set null for the last segment.
   The audio engine converts this to an SSML <break> tag for ElevenLabs.
@@ -539,6 +546,24 @@ function validateStructural(script: ScriptJson, facts: FactsJson): string[] {
     const totalVo = segs.reduce((s, seg) => s + (seg.target_duration_sec ?? 0), 0);
     if (totalVo < 26 || totalVo > 36)
       v.push(`Total VO duration ${totalVo}s is outside the 26–36s range`);
+
+    // Per-segment hard caps — fal.ai rejects clips > 15s; keep VO tight
+    const MAX_SEGMENT_SEC = 10;
+    const MAX_SEGMENT_CHARS = 130;
+    for (const seg of segs) {
+      if (typeof seg.target_duration_sec === 'number' && seg.target_duration_sec > MAX_SEGMENT_SEC)
+        v.push(`vo_segment scene ${seg.scene_id}: target_duration_sec ${seg.target_duration_sec}s exceeds 10s hard cap — split or shorten`);
+      if (seg.vo_text && seg.vo_text.length > MAX_SEGMENT_CHARS)
+        v.push(`vo_segment scene ${seg.scene_id}: vo_text is ${seg.vo_text.length} chars — exceeds 130-char cap (≈10s). Shorten to ≤${MAX_SEGMENT_CHARS} chars`);
+    }
+
+    // Per-scene alignment: vo_segment.target_duration_sec must match scene.duration_sec
+    const sceneById = new Map(nonCtaScenes.map(sc => [sc.scene_id, sc]));
+    for (const seg of segs) {
+      const sc = sceneById.get(seg.scene_id);
+      if (sc && typeof seg.target_duration_sec === 'number' && seg.target_duration_sec !== sc.duration_sec)
+        v.push(`vo_segment scene ${seg.scene_id}: target_duration_sec (${seg.target_duration_sec}s) must equal scene duration_sec (${sc.duration_sec}s)`);
+    }
 
     // pause_after_sec must be a positive number if provided
     for (const seg of segs) {

@@ -258,7 +258,8 @@ async function generateClip(
   // Audio is the master clock. Use the actual VO duration (ceil'd to the nearest
   // integer second fal.ai accepts) instead of Claude's target. This guarantees
   // the clip is always exactly as long as the audio, eliminating overlap in Remotion.
-  const clipDurationSec = voDurationSec ? Math.ceil(voDurationSec) : scene.duration_sec;
+  // fal.ai hard cap is 15s. Clamp so an overlong VO never causes Unprocessable Entity.
+  const clipDurationSec = voDurationSec ? Math.min(Math.ceil(voDurationSec), 15) : scene.duration_sec;
   const localPath = path.join(
     DATA_RUNS_DIR,
     adId,
@@ -380,7 +381,7 @@ async function generateClip(
           prompt,
           image_urls: venueUrls,
           resolution: '720p',
-          duration: String(scene.duration_sec),
+          duration: String(clipDurationSec),
           aspect_ratio: '9:16',
           generate_audio: false,
           bitrate_mode: 'standard',
@@ -423,7 +424,7 @@ async function generateClip(
         prompt,
         image_url: imageUrl,
         resolution: '720p',
-        duration: String(scene.duration_sec),
+        duration: String(clipDurationSec),
         aspect_ratio: '9:16',
         generate_audio: false,
         bitrate_mode: 'standard',
