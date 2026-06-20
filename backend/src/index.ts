@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
 import { initRemotionBundle } from './services/remotion-client';
+import { errorHandler } from './middleware';
 import generateRouter from './routes/generate';
 import statusRouter from './routes/status';
 import outputRouter from './routes/output';
@@ -35,6 +36,20 @@ app.use('/api', statusRouter);
 app.use('/api', outputRouter);
 app.use('/api', configRouter);
 app.use('/api', runsRouter);
+
+// Error-handling middleware — must be registered last, after all routes.
+// Catches errors forwarded by asyncHandler so a failing DB/3rd-party call
+// returns a JSON 500 instead of crashing the process.
+app.use(errorHandler);
+
+// Last-resort safety net: log async failures that escaped a handler instead of
+// letting the default behavior tear the process down silently.
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+});
 
 app.listen(PORT, () => {
   console.log(`MintAds backend running on http://localhost:${PORT}`);

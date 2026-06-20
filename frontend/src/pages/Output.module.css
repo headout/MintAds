@@ -1,0 +1,132 @@
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+}
+
+.adId {
+  color: var(--text-grey-3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-all;
+  margin: var(--space-4) 0 var(--space-24);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: var(--space-24);
+  align-items: start;
+}
+
+.playerCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.stage {
+  background: var(--color-grey-900);
+  border-radius: var(--radius-16);
+  padding: var(--space-16);
+  display: flex;
+  justify-content: center;
+}
+
+.video {
+  max-height: 60vh;
+  max-width: 100%;
+  border-radius: var(--radius-8);
+  background: #000;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.downloads {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.sideCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-8) var(--space-16);
+}
+
+.metaKey {
+  color: var(--text-grey-3);
+}
+.metaVal {
+  color: var(--text-grey-1);
+}
+
+.costRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-10) 0;
+  border-bottom: 1px solid var(--divider-light);
+}
+.costTotal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-12);
+  margin-top: var(--space-4);
+}
+
+.claimList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.claim {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-10);
+}
+.claimIcon {
+  flex: none;
+  margin-top: 2px;
+}
+.claimOk {
+  color: var(--text-positive);
+}
+.claimNo {
+  color: var(--text-destructive);
+}
+.claimText {
+  color: var(--text-grey-1);
+}
+.claimSrc {
+  color: var(--text-grey-3);
+}
+.claimSummary {
+  margin-top: var(--space-16);
+  color: var(--text-grey-2);
+}
+
+@media (max-width: 760px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}

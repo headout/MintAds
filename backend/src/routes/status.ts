@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
+import { asyncHandler } from '../middleware';
 
 const router = Router();
 
 // GET /api/status/:ad_id
 // Polled by the frontend every 2s after POST /api/generate
-router.get('/status/:ad_id', async (req: Request, res: Response) => {
+router.get('/status/:ad_id', asyncHandler(async (req: Request, res: Response) => {
   const { ad_id } = req.params;
 
   const runRes = await db.query(
@@ -46,6 +47,6 @@ router.get('/status/:ad_id', async (req: Request, res: Response) => {
       completed_at: s.completed_at ?? null,
     })),
   });
-});
+}));
 
 export default router;

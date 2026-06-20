@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
+import { asyncHandler } from '../middleware';
 
 const router = Router();
 
 // GET /api/output/:ad_id
 // Returns final output after status = 'completed'
-router.get('/output/:ad_id', async (req: Request, res: Response) => {
+router.get('/output/:ad_id', asyncHandler(async (req: Request, res: Response) => {
   const { ad_id } = req.params;
 
   const runRes = await db.query(
@@ -82,6 +83,6 @@ router.get('/output/:ad_id', async (req: Request, res: Response) => {
     script: run.script ?? null,
     facts: run.facts ?? null,
   });
-});
+}));
 
 export default router;

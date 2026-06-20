@@ -1,0 +1,129 @@
+.wrap {
+  position: relative;
+}
+
+/* Trigger mirrors the .control input styling but is a button. */
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-12) var(--space-14);
+  border-radius: var(--radius-12);
+  border: 1.5px solid var(--divider-dark);
+  background: var(--surface-white);
+  color: var(--text-grey-1);
+  font-family: var(--font-text);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-15);
+  line-height: var(--lh-20);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms var(--ease-functional-standard),
+    box-shadow 160ms var(--ease-functional-standard);
+}
+
+.trigger:hover:not(:disabled) {
+  border-color: var(--color-grey-400);
+}
+
+.triggerOpen,
+.trigger:focus-visible {
+  border-color: var(--border-primary);
+  box-shadow: 0 0 0 3px var(--color-purps-20);
+}
+
+.trigger:disabled {
+  background: var(--surface-grey-2);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+.invalid {
+  border-color: var(--border-destructive);
+}
+.invalid.triggerOpen,
+.invalid:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-warningred-100);
+}
+
+.placeholder {
+  color: var(--text-grey-3);
+}
+
+.value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  flex: none;
+  color: var(--text-grey-3);
+  display: inline-flex;
+  transition: transform 180ms var(--ease-functional-standard);
+}
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* Popup listbox */
+.popup {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + var(--space-6));
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: var(--space-6);
+  list-style: none;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--surface-white);
+  border-radius: var(--radius-12);
+  box-shadow: var(--shadow-2);
+  border: 1px solid var(--divider-primary);
+  animation: pop 140ms var(--ease-functional-enter);
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.groupHeader {
+  padding: var(--space-8) var(--space-10) var(--space-4);
+  color: var(--text-grey-3);
+  letter-spacing: var(--ls-4);
+  text-transform: uppercase;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-10) var(--space-10);
+  border-radius: var(--radius-8);
+  color: var(--text-grey-1);
+  cursor: pointer;
+  scroll-margin: var(--space-6);
+}
+
+.optionActive {
+  background: var(--surface-grey-2);
+}
+
+.optionSelected {
+  color: var(--text-primary);
+  font-weight: var(--fw-regular);
+}
+
+.check {
+  flex: none;
+  color: var(--text-primary);
+}

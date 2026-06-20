@@ -1,0 +1,435 @@
+/* ==========================================================================
+   Headout Design System — colors_and_type.css
+   Ported from @headout/eevee + @headout/pixie Panda CSS tokens.
+   See README.md for usage, tone, motion guidelines.
+   ========================================================================== */
+
+/* -------- Fonts -------- */
+@font-face {
+  font-family: 'halyard-text';
+  src: url('./fonts/HalyardText-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'halyard-text';
+  src: url('./fonts/HalyardText-Book.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'halyard-text';
+  src: url('./fonts/HalyardText-Regular.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'halyard-text';
+  src: url('./fonts/HalyardText-SemiBold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'halyard-text';
+  src: url('./fonts/HalyardText-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'halyard-display';
+  src: url('./fonts/HalyardDisplay-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'halyard-display';
+  src: url('./fonts/HalyardDisplay-Book.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'halyard-display';
+  src: url('./fonts/HalyardDisplay-Regular.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'halyard-display';
+  src: url('./fonts/HalyardDisplay-SemiBold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'halyard-display';
+  src: url('./fonts/HalyardDisplay-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* ======= CORE COLORS ======= */
+
+  /* Primary */
+  --color-purps:        #8000ff;   /* signature Headout purple */
+  --color-white:        #ffffff;
+  --color-black:        #111111;
+
+  /* Candy (pink — secondary brand accent) */
+  --color-candy-100: #fff2f8;
+  --color-candy-200: #ffe5f2;
+  --color-candy-300: #ff66af;
+  --color-candy-400: #fe3394;
+  --color-candy-500: #ff007a;
+  --color-candy-600: #e5006e;
+  --color-candy-700: #cc0062;
+  --color-candy-800: #660031;
+
+  /* Dreamy pale (warm blush) */
+  --color-dreamypale-300: #fff4f2;
+  --color-dreamypale-400: #ffdad4;
+  --color-dreamypale-500: #ffc5bb;
+  --color-dreamypale-600: #e5b1a8;
+  --color-dreamypale-700: #cc9e96;
+  --color-dreamypale-800: #a4766e;
+
+  /* Peachy orange */
+  --color-peachyorange-200: #ffece5;
+  --color-peachyorange-300: #ffe7ce;
+  --color-peachyorange-400: #ffc4b0;
+  --color-peachyorange-500: #ff9d7c;
+  --color-peachyorange-600: #e58d70;
+  --color-peachyorange-700: #cc7e63;
+  --color-peachyorange-800: #a4563b;
+
+  /* Joy mustard */
+  --color-joymustard-200: #fff8e5;
+  --color-joymustard-300: #fff2cc;
+  --color-joymustard-400: #ffd766;
+  --color-joymustard-500: #ffbc00;
+  --color-joymustard-600: #e5a900;
+  --color-joymustard-700: #cc9600;
+  --color-joymustard-800: #9f6b00;
+
+  /* Hola yellow */
+  --color-holayellow-200: #fffde5;
+  --color-holayellow-300: #fffbcc;
+  --color-holayellow-400: #fff266;
+  --color-holayellow-500: #ffe900;
+  --color-holayellow-600: #e5d200;
+  --color-holayellow-700: #ccba00;
+  --color-holayellow-800: #807400;
+
+  /* Subtle green */
+  --color-subtlegreen-200: #f9ffe5;
+  --color-subtlegreen-300: #f4ffcc;
+  --color-subtlegreen-400: #e6ff8b;
+  --color-subtlegreen-500: #d2f260;
+  --color-subtlegreen-600: #bcd956;
+  --color-subtlegreen-700: #a6bf4c;
+  --color-subtlegreen-800: #64732e;
+
+  /* Okay green (success) */
+  --color-okaygreen-100: #f1fff2;
+  --color-okaygreen-200: #deffee;
+  --color-okaygreen-300: #aaffd4;
+  --color-okaygreen-400: #49ee9c;
+  --color-okaygreen-500: #15d676;
+  --color-okaygreen-600: #10a35a;
+  --color-okaygreen-700: #078842;
+  --color-okaygreen-800: #095730;
+
+  /* Ocean blue */
+  --color-oceanblue-200: #d6f8ff;
+  --color-oceanblue-300: #a4f0ff;
+  --color-oceanblue-400: #2fcceb;
+  --color-oceanblue-500: #00c4eb;
+  --color-oceanblue-600: #00afd1;
+  --color-oceanblue-700: #009ab8;
+  --color-oceanblue-800: #02819c;
+  --color-oceanblue-900: #004452;
+
+  /* Link blue */
+  --color-linkblue-200: #adc6ff;
+  --color-linkblue-300: #7ba3ff;
+  --color-linkblue-400: #4377f0;
+  --color-linkblue-500: #1355f0;
+  --color-linkblue-600: #114cd6;
+  --color-linkblue-700: #0f43bd;
+  --color-linkblue-800: #071f57;
+
+  /* Warning red (destructive) */
+  --color-warningred-100: #ffe5e5;
+  --color-warningred-200: #ffd8d8;
+  --color-warningred-300: #ef9494;
+  --color-warningred-400: #ef4c4c;
+  --color-warningred-500: #ef0404;
+  --color-warningred-600: #d60404;
+  --color-warningred-700: #bd0303;
+  --color-warningred-800: #570101;
+
+  /* Purps scale */
+  --color-purps-10:  #f8f6ff;
+  --color-purps-20:  #f3e9ff;
+  --color-purps-30:  #ecd9ff;
+  --color-purps-40:  #e6ccff;
+  --color-purps-50:  #d9b3ff;
+  --color-purps-100: #cc99ff;
+  --color-purps-200: #c68cff;
+  --color-purps-300: #b266ff;
+  --color-purps-400: #9933ff;
+  --color-purps-600: #7300e5;
+  --color-purps-700: #6600cc;
+  --color-purps-800: #330066;
+  --color-purps-900: #150029;
+
+  /* Grey */
+  --color-grey-50:  #fafafa;
+  --color-grey-100: #f8f8f8;
+  --color-grey-200: #f0f0f0;
+  --color-grey-300: #e2e2e2;
+  --color-grey-400: #c4c4c4;
+  --color-grey-500: #9f9f9f;
+  --color-grey-600: #888888;
+  --color-grey-700: #666666;
+  --color-grey-800: #444444;
+  --color-grey-900: #222222;
+
+  /* Alphas */
+  --color-white-a05: #ffffff0c;
+  --color-white-a10: #ffffff19;
+  --color-white-a20: #ffffff33;
+  --color-white-a30: #ffffff4c;
+  --color-white-a50: #ffffff7f;
+  --color-white-a80: #ffffffcc;
+  --color-black-a05: #0000000c;
+  --color-black-a10: #00000019;
+  --color-black-a20: #00000033;
+  --color-black-a30: #0000004c;
+  --color-black-a50: #0000007f;
+  --color-black-a80: #000000cc;
+
+  /* ======= SEMANTIC COLORS ======= */
+  /* Surface */
+  --surface-white: var(--color-white);
+  --surface-grey-1: var(--color-grey-50);
+  --surface-grey-2: var(--color-grey-100);
+  --surface-grey-3: var(--color-grey-200);
+  --surface-primary-1: var(--color-purps-20);
+  --surface-primary-2: var(--color-purps-30);
+  --surface-candy-1: var(--color-candy-100);
+  --surface-candy-2: var(--color-candy-200);
+  --surface-success: var(--color-okaygreen-200);
+  --surface-warning: var(--color-joymustard-200);
+  --surface-error: var(--color-warningred-200);
+
+  --surface-dark-black: var(--color-grey-900);
+  --surface-dark-primary-1: var(--color-purps-900);
+  --surface-dark-primary-2: var(--color-purps-800);
+  --surface-dark-primary-3: var(--color-purps-700);
+
+  /* Text */
+  --text-grey-1: var(--color-grey-900);   /* primary text */
+  --text-grey-2: var(--color-grey-800);   /* heading / emphatic */
+  --text-grey-3: var(--color-grey-700);   /* secondary text */
+  --text-disabled: var(--color-grey-700);
+  --text-white: var(--color-white);
+  --text-white-translucent: var(--color-white-a80);
+  --text-primary: var(--color-purps-700);
+  --text-candy: var(--color-candy-600);
+  --text-destructive: var(--color-warningred-600);
+  --text-positive: var(--color-okaygreen-700);
+  --text-warning: var(--color-joymustard-800);
+  --text-linkblue: var(--color-linkblue-700);
+
+  /* CTA */
+  --cta-primary: var(--color-purps);
+  --cta-tertiary: var(--color-purps-20);
+  --cta-positive: var(--color-okaygreen-700);
+  --cta-destructive: var(--color-warningred-600);
+  --cta-black: var(--color-grey-900);
+  --cta-white: var(--color-white);
+  --cta-disabled-primary: var(--color-grey-400);
+  --cta-disabled-tertiary: var(--color-grey-200);
+
+  /* Borders */
+  --border-primary: var(--color-purps-600);
+  --border-success: var(--color-okaygreen-700);
+  --border-warning: var(--color-joymustard-800);
+  --border-destructive: var(--color-warningred-700);
+  --border-candy: var(--color-candy-700);
+
+  /* Dividers */
+  --divider-light: var(--color-grey-100);
+  --divider-primary: var(--color-grey-200);
+  --divider-dark: var(--color-grey-300);
+
+  /* Overlays */
+  --overlay-light: var(--color-black-a30);
+  --overlay-primary: var(--color-black-a50);
+  --overlay-dark: var(--color-black-a80);
+
+  /* ======= TYPOGRAPHY ======= */
+  --font-display: 'halyard-display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-text:    'halyard-text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* Font sizes (rem) */
+  --fs-10: 0.625rem;
+  --fs-12: 0.75rem;
+  --fs-14: 0.875rem;
+  --fs-15: 0.9375rem;
+  --fs-16: 1rem;
+  --fs-17: 1.0625rem;
+  --fs-18: 1.125rem;
+  --fs-21: 1.3125rem;
+  --fs-24: 1.5rem;
+  --fs-30: 1.875rem;
+  --fs-36: 2.25rem;
+  --fs-48: 3rem;
+  --fs-60: 3.75rem;
+  --fs-75: 4.6875rem;
+
+  /* Line heights */
+  --lh-12: 0.75rem;
+  --lh-16: 1rem;
+  --lh-20: 1.25rem;
+  --lh-24: 1.5rem;
+  --lh-28: 1.75rem;
+  --lh-38: 2.375rem;
+  --lh-44: 2.75rem;
+  --lh-54: 3.375rem;
+  --lh-72: 4.5rem;
+  --lh-90: 5.625rem;
+
+  /* Letter spacing */
+  --ls-0: 0; /* @kind spacing */
+  --ls-4: 0.4px;
+  --ls-6: 0.6px;
+  --ls-8: 0.8px;
+  --ls-10: 1px;
+
+  /* Weights (only 300/500/600/700 used) */
+  --fw-light:    300; /* @kind font */
+  --fw-regular:  500; /* @kind font */
+  --fw-semibold: 600; /* @kind font */
+  --fw-bold:     700; /* @kind font */
+
+  /* ======= SPACING ======= */
+  --space-1:   1px;
+  --space-2:   2px;
+  --space-3:   3px;
+  --space-4:   4px;
+  --space-5:   5px;
+  --space-6:   6px;
+  --space-8:   8px;
+  --space-10:  10px;
+  --space-12:  12px;
+  --space-14:  14px;
+  --space-16:  16px;
+  --space-20:  20px;
+  --space-24:  24px;
+  --space-32:  32px;
+  --space-40:  40px;
+  --space-48:  48px;
+  --space-56:  56px;
+  --space-64:  64px;
+  --space-80:  80px;
+  --space-96:  96px;
+  --space-128: 128px;
+
+  /* ======= RADII ======= */
+  --radius-0:  0px;
+  --radius-2:  2px;
+  --radius-4:  4px;
+  --radius-6:  6px;
+  --radius-8:  8px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-20: 20px;
+  --radius-50p: 50%;
+
+  /* ======= SHADOWS ======= */
+  --shadow-1: 0px 1px 6px 1px rgba(17, 17, 17, 0.10), 0px 1px 4px 0px rgba(17, 17, 17, 0.05);
+  --shadow-2: 0px 4px 12px 2px rgba(17, 17, 17, 0.10), 0px 1px 8px 0px rgba(17, 17, 17, 0.05);
+  --shadow-3: 0px 6px 16px 5px rgba(17, 17, 17, 0.10), 0px 1px 8px 0px rgba(17, 17, 17, 0.05);
+  --shadow-top-1: 0px -1px 8px 0px rgba(17, 17, 17, 0.08);
+  --shadow-top-2: 0px -2px 12px 0px rgba(17, 17, 17, 0.12);
+  --shadow-inset: 0px 1px 4px 0px rgba(17, 17, 17, 0.10) inset;
+
+  /* ======= EASINGS ======= */
+  --ease-functional-enter:    cubic-bezier(0, 0, 0.3, 1); /* @kind other */
+  --ease-functional-exit:     cubic-bezier(0.7, 0, 1, 1); /* @kind other */
+  --ease-functional-standard: cubic-bezier(0.7, 0, 0.3, 1); /* @kind other */
+  --ease-expressive-enter:    cubic-bezier(0, 0, 0.3, 1.3); /* @kind other */
+  --ease-expressive-standard: cubic-bezier(0.7, -0.3, 0.3, 1.3); /* @kind other */
+  --ease-cubic:               cubic-bezier(0.6, 0, 0.4, 1); /* @kind other */
+  --ease-extreme:             cubic-bezier(0.8, 0, 0.2, 1); /* @kind other */
+}
+
+/* ======= SEMANTIC ELEMENT DEFAULTS ======= */
+html { font-family: var(--font-text); color: var(--text-grey-1); }
+body { margin: 0; background: var(--surface-white); }
+
+h1, h2, h3, h4, h5 { font-family: var(--font-display); font-weight: var(--fw-regular); letter-spacing: var(--ls-6); color: var(--text-grey-1); margin: 0; }
+h1 { font-size: var(--fs-60); line-height: var(--lh-72); letter-spacing: var(--ls-8); }
+h2 { font-size: var(--fs-48); line-height: var(--lh-54); }
+h3 { font-size: var(--fs-36); line-height: var(--lh-44); }
+h4 { font-size: var(--fs-30); line-height: var(--lh-38); letter-spacing: var(--ls-4); }
+h5 { font-size: var(--fs-24); line-height: var(--lh-28); letter-spacing: var(--ls-4); }
+
+/* ======= TEXTSTYLE UTILITIES ======= */
+/* display.* — Halyard Display, weight 500 */
+.t-display-xl      { font-family: var(--font-display); font-weight: 500; font-size: var(--fs-75); line-height: var(--lh-90); letter-spacing: var(--ls-8); }
+.t-display-lg      { font-family: var(--font-display); font-weight: 500; font-size: var(--fs-60); line-height: var(--lh-72); letter-spacing: var(--ls-8); }
+.t-display-md      { font-family: var(--font-display); font-weight: 500; font-size: var(--fs-48); line-height: var(--lh-54); letter-spacing: var(--ls-6); }
+.t-display-rg      { font-family: var(--font-display); font-weight: 500; font-size: var(--fs-36); line-height: var(--lh-44); letter-spacing: var(--ls-6); }
+.t-display-sm      { font-family: var(--font-display); font-weight: 500; font-size: var(--fs-30); line-height: var(--lh-38); letter-spacing: var(--ls-4); }
+.t-display-xs      { font-family: var(--font-display); font-weight: 500; font-size: var(--fs-24); line-height: var(--lh-28); letter-spacing: var(--ls-4); }
+
+/* heading.* — Halyard Text, weight 600 */
+.t-heading-lg      { font-family: var(--font-text); font-weight: 600; font-size: var(--fs-24); line-height: var(--lh-28); }
+.t-heading-md      { font-family: var(--font-text); font-weight: 600; font-size: var(--fs-21); line-height: var(--lh-28); }
+.t-heading-rg      { font-family: var(--font-text); font-weight: 600; font-size: var(--fs-18); line-height: var(--lh-24); }
+.t-heading-sm      { font-family: var(--font-text); font-weight: 600; font-size: var(--fs-15); line-height: var(--lh-20); }
+
+/* subheading.* */
+.t-subheading-lg   { font-family: var(--font-text); font-weight: 500; font-size: var(--fs-16); line-height: var(--lh-20); }
+.t-subheading-rg   { font-family: var(--font-text); font-weight: 500; font-size: var(--fs-14); line-height: var(--lh-20); }
+.t-subheading-sm   { font-family: var(--font-text); font-weight: 500; font-size: var(--fs-12); line-height: var(--lh-16); }
+
+/* cta.* */
+.t-cta-lg          { font-family: var(--font-text); font-weight: 500; font-size: var(--fs-18); line-height: var(--lh-24); }
+.t-cta-rg          { font-family: var(--font-text); font-weight: 500; font-size: var(--fs-16); line-height: var(--lh-20); }
+.t-cta-sm          { font-family: var(--font-text); font-weight: 500; font-size: var(--fs-14); line-height: var(--lh-20); }
+
+/* para.* — body copy */
+.t-para-lg         { font-family: var(--font-text); font-weight: 300; font-size: var(--fs-17); line-height: var(--lh-28); }
+.t-para-md         { font-family: var(--font-text); font-weight: 300; font-size: var(--fs-15); line-height: var(--lh-24); }
+.t-para-rg         { font-family: var(--font-text); font-weight: 300; font-size: var(--fs-14); line-height: var(--lh-20); }
+.t-para-sm         { font-family: var(--font-text); font-weight: 300; font-size: var(--fs-12); line-height: var(--lh-20); }
+.t-para-xs         { font-family: var(--font-text); font-weight: 500; font-size: var(--fs-10); line-height: var(--lh-16); }
+.t-para-caption    { font-family: var(--font-text); font-weight: 500; font-size: var(--fs-12); line-height: var(--lh-16); }
+
+/* ui-label.* */
+.t-label-lg        { font-family: var(--font-text); font-weight: 300; font-size: var(--fs-17); line-height: var(--lh-20); }
+.t-label-md        { font-family: var(--font-text); font-weight: 300; font-size: var(--fs-15); line-height: var(--lh-20); }
+.t-label-rg        { font-family: var(--font-text); font-weight: 300; font-size: var(--fs-14); line-height: var(--lh-16); }
+.t-label-sm        { font-family: var(--font-text); font-weight: 300; font-size: var(--fs-12); line-height: var(--lh-16); }
+.t-label-xs        { font-family: var(--font-text); font-weight: 500; font-size: var(--fs-10); line-height: var(--lh-12); }
+.t-label-rg-heavy  { font-family: var(--font-text); font-weight: 500; font-size: var(--fs-14); line-height: var(--lh-16); }
+
+/* tags.* — capitalised + tracking */
+.t-tag-md          { font-family: var(--font-text); font-weight: 500; font-size: var(--fs-14); line-height: var(--lh-16); letter-spacing: var(--ls-4); text-transform: capitalize; }
+.t-tag-rg          { font-family: var(--font-text); font-weight: 500; font-size: var(--fs-12); line-height: var(--lh-12); letter-spacing: var(--ls-4); text-transform: capitalize; }
+.t-tag-sm          { font-family: var(--font-text); font-weight: 500; font-size: var(--fs-10); line-height: var(--lh-12); letter-spacing: var(--ls-4); text-transform: capitalize; }
+.t-tag-booster     { font-family: var(--font-text); font-weight: 500; font-size: var(--fs-10); line-height: var(--lh-16); letter-spacing: var(--ls-6); text-transform: capitalize; }

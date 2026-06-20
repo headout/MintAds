@@ -1,0 +1,46 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-4) var(--space-10);
+  /* Stadium pill — a fixed large radius clamps to half the height. 50% would
+     make a wide badge render as an ellipse, not a pill. */
+  border-radius: 999px;
+  font-family: var(--font-text);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-12);
+  line-height: var(--lh-16);
+  letter-spacing: var(--ls-4);
+  white-space: nowrap;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-50p);
+  background: currentColor;
+  flex: none;
+}
+
+.neutral {
+  background: var(--surface-grey-3);
+  color: var(--text-grey-3);
+}
+.info {
+  background: var(--surface-primary-1);
+  color: var(--text-primary);
+}
+.success {
+  background: var(--surface-success);
+  /* -800 (not --text-positive/-700) for AA contrast on the pale-green chip at 12px */
+  color: var(--color-okaygreen-800);
+}
+.warning {
+  background: var(--surface-warning);
+  color: var(--text-warning);
+}
+.danger {
+  background: var(--surface-error);
+  /* -700 for AA contrast on the pale-red chip at 12px */
+  color: var(--color-warningred-700);
+}

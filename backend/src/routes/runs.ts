@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
+import { asyncHandler } from '../middleware';
 
 const router = Router();
 
 // GET /api/runs
 // List all pipeline runs (filterable, paginated)
-router.get('/runs', async (req: Request, res: Response) => {
+router.get('/runs', asyncHandler(async (req: Request, res: Response) => {
   const { status, experience_id, limit = '20', offset = '0' } = req.query;
 
   const conditions: string[] = [];
@@ -54,11 +55,11 @@ router.get('/runs', async (req: Request, res: Response) => {
       duration_sec: r.duration_sec ?? null,
     })),
   );
-});
+}));
 
 // GET /api/runs/:ad_id/cost
 // Detailed cost breakdown for a single run
-router.get('/runs/:ad_id/cost', async (req: Request, res: Response) => {
+router.get('/runs/:ad_id/cost', asyncHandler(async (req: Request, res: Response) => {
   const { ad_id } = req.params;
 
   const runRes = await db.query(
@@ -96,6 +97,6 @@ router.get('/runs/:ad_id/cost', async (req: Request, res: Response) => {
       params: s.params ?? null,
     })),
   });
-});
+}));
 
 export default router;

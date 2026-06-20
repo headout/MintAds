@@ -407,6 +407,31 @@ function claimMatchesValue(claimText: string, factsValue: unknown): boolean {
   // Direct substring match
   if (claimNorm.includes(valueStr) || valueStr.includes(claimNorm)) return true;
 
+  // Numeric threshold / approximation checks
+  const factsNum = parseFloat(String(factsValue).replace(/[^0-9.]/g, ''));
+  if (!isNaN(factsNum)) {
+    // "over X / more than X / above X" — valid when facts value >= stated threshold
+    const overMatch = claimNorm.match(/\b(?:over|more than|above)\s*([\d.]+)/);
+    if (overMatch) {
+      const threshold = parseFloat(overMatch[1]);
+      if (!isNaN(threshold) && factsNum >= threshold) return true;
+    }
+
+    // "under X / less than X / below X" — valid when facts value <= stated threshold
+    const underMatch = claimNorm.match(/\b(?:under|less than|below)\s*([\d.]+)/);
+    if (underMatch) {
+      const threshold = parseFloat(underMatch[1]);
+      if (!isNaN(threshold) && factsNum <= threshold) return true;
+    }
+
+    // "around/about/nearly/almost/approximately/~X" — valid within ±15% of facts value
+    const approxMatch = claimNorm.match(/(?:around|about|nearly|almost|approximately|~)\s*([\d.]+)/);
+    if (approxMatch) {
+      const stated = parseFloat(approxMatch[1]);
+      if (!isNaN(stated) && factsNum > 0 && Math.abs(factsNum - stated) / factsNum <= 0.15) return true;
+    }
+  }
+
   // Word-overlap fallback: at least one significant word (>3 chars) from claim in value
   const significantWords = claimNorm.split(/\s+/).filter(w => w.length > 3);
   return significantWords.some(w => valueStr.includes(w));

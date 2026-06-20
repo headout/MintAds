@@ -1,0 +1,53 @@
+.skeleton {
+  background: var(--surface-grey-3);
+  border-radius: var(--radius-8);
+  animation: pulse 1.4s var(--ease-functional-standard) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-12);
+  padding: var(--space-48) var(--space-24);
+}
+
+.iconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-50p);
+  background: var(--surface-grey-2);
+  color: var(--text-grey-3);
+}
+
+.iconWrapError {
+  background: var(--surface-error);
+  color: var(--text-destructive);
+}
+
+.title {
+  color: var(--text-grey-1);
+}
+
+.message {
+  color: var(--text-grey-3);
+  max-width: 42ch;
+}
+
+.actions {
+  margin-top: var(--space-8);
+}

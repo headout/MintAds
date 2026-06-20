@@ -1,0 +1,22 @@
+.card {
+  background: var(--surface-white);
+  border-radius: var(--radius-16);
+  box-shadow: var(--shadow-1);
+  padding: var(--space-24);
+}
+
+.pad16 {
+  padding: var(--space-16);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  margin-bottom: var(--space-16);
+}
+
+.title {
+  color: var(--text-grey-1);
+}

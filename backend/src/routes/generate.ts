@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { startPipeline } from '../orchestrator';
 import { db } from '../db';
+import { asyncHandler } from '../middleware';
 import type { UserInput } from '../types';
 
 const router = Router();
@@ -9,7 +10,7 @@ const VALID_JOURNEY_TYPES = ['pre_trip', 'in_trip'];
 const VALID_BRANDS = ['headout', 'non_headout'];
 const VALID_FORMATS = ['9:16', '1:1', '16:9', 'all'];
 
-router.post('/generate', async (req: Request, res: Response) => {
+router.post('/generate', asyncHandler(async (req: Request, res: Response) => {
   const {
     experience_id,
     persona,
@@ -84,6 +85,6 @@ router.post('/generate', async (req: Request, res: Response) => {
     console.error('[POST /api/generate] Failed to start pipeline:', (err as Error).message);
     return res.status(500).json({ error: 'Failed to start pipeline. Please try again.' });
   }
-});
+}));
 
 export default router;

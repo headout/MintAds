@@ -1,0 +1,99 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.label {
+  color: var(--text-grey-2);
+}
+
+.required {
+  color: var(--text-candy);
+  margin-left: var(--space-2);
+}
+
+.hint {
+  color: var(--text-grey-3);
+}
+
+.error {
+  color: var(--text-destructive);
+}
+
+.control {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-12) var(--space-14);
+  border-radius: var(--radius-12);
+  border: 1.5px solid var(--divider-dark);
+  background: var(--surface-white);
+  color: var(--text-grey-1);
+  font-family: var(--font-text);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-15);
+  line-height: var(--lh-20);
+  transition: border-color 160ms var(--ease-functional-standard),
+    box-shadow 160ms var(--ease-functional-standard);
+}
+
+.control::placeholder {
+  color: var(--text-grey-3);
+}
+
+.control:hover:not(:disabled) {
+  border-color: var(--color-grey-400);
+}
+
+.control:focus {
+  outline: none;
+  border-color: var(--border-primary);
+  box-shadow: 0 0 0 3px var(--color-purps-20);
+}
+
+.control:disabled {
+  background: var(--surface-grey-2);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+.invalid,
+.invalid:hover {
+  border-color: var(--border-destructive);
+}
+.invalid:focus {
+  box-shadow: 0 0 0 3px var(--color-warningred-100);
+}
+
+/* Select: native control + custom chevron */
+.selectWrap {
+  position: relative;
+  display: block;
+}
+
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: var(--space-40);
+  cursor: pointer;
+}
+
+.chevron {
+  position: absolute;
+  right: var(--space-12);
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--text-grey-3);
+  display: inline-flex;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 84px;
+}
+
+.counter {
+  align-self: flex-end;
+  color: var(--text-grey-3);
+}

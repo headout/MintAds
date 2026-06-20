@@ -1,0 +1,82 @@
+/* App-wide base layer. Design tokens live in ds/colors_and_type.css. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-grey-1);
+  color: var(--text-grey-1);
+  font-family: var(--font-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: var(--font-text);
+}
+
+/* Consistent, on-brand focus ring for keyboard users (2px white + 3px purps halo). */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--surface-white), 0 0 0 5px var(--color-purps-50);
+  border-radius: var(--radius-8);
+}
+
+/* Visually hidden, but available to screen readers and on focus. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: fixed;
+  top: var(--space-8);
+  left: var(--space-8);
+  z-index: 100;
+  padding: var(--space-10) var(--space-16);
+  background: var(--cta-primary);
+  color: var(--text-white);
+  border-radius: var(--radius-8);
+  transform: translateY(-200%);
+  transition: transform 160ms var(--ease-functional-standard);
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+main:focus {
+  outline: none;
+}
+
+/* Respect reduced-motion preferences across the app. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
