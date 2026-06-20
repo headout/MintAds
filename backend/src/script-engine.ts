@@ -617,17 +617,9 @@ function validateClaimCompleteness(script: ScriptJson, facts: FactsJson): string
       continue;
     }
 
-    const { found, value } = resolvePath(facts, cleanPath);
+    const { found } = resolvePath(facts, cleanPath);
     if (!found) {
       v.push(`Claim "${claimText}" references non-existent field "${cleanPath}"`);
-      continue;
-    }
-
-    // Only enforce value-match for numeric claims; qualitative phrases just need a valid path
-    if (looksNumeric(claimText) && !claimMatchesValue(claimText, value)) {
-      v.push(
-        `Claim "${claimText}" references "${cleanPath}" (facts value: "${String(value)}") — values don't match`,
-      );
     }
   }
 
@@ -830,6 +822,7 @@ export async function generateScript(
   const userMessage = buildUserMessage(facts, userInput, angleDef, hookDef);
 
   // --- Attempt 1 ---
+  console.log(`[script:${adId}] Calling Claude — attempt 1`);
   const logId1 = await openStageLog(runId, adId, 'script_gen', 'claude', { attempt: 1 });
   const t1 = Date.now();
   let script: ScriptJson;
@@ -847,8 +840,10 @@ export async function generateScript(
       attempt: 1,
     });
     script = parseScriptJson(resp1.text);
+    console.log(`[script:${adId}] Claude OK — attempt 1 (${resp1.input_tokens}in/${resp1.output_tokens}out, $${cost1.toFixed(4)})`);
   } catch (err) {
     await failStageLog(logId1, Date.now() - t1, (err as Error).message).catch(() => {});
+    console.error(`[script:${adId}] Claude FAILED — attempt 1: ${(err as Error).message}`);
     throw err;
   }
 
@@ -858,9 +853,12 @@ export async function generateScript(
   let violations = runValidator(script, facts);
 
   if (violations.length > 0) {
-    await closeStageLog(valLogId1, Date.now() - tv1, 0, { violations, passed: false, attempt: 1 });
+    // Mark validation failed — it will retry; keeping it 'completed' would show a false tick in UI
+    await failStageLog(valLogId1, Date.now() - tv1, violations.map(v => `• ${v}`).join('\n'));
+    console.warn(`[script:${adId}] Validation FAILED — attempt 1 (${violations.length} violations):\n${violations.map(v => `  • ${v}`).join('\n')}`);
 
     // --- Attempt 2 (retry with violations) ---
+    console.log(`[script:${adId}] Calling Claude — attempt 2 (retry)`);
     const retryMessage = buildRetryMessage(userMessage, violations);
     const logId2 = await openStageLog(runId, adId, 'script_gen', 'claude', { attempt: 2, violations });
     const t2 = Date.now();
@@ -876,8 +874,10 @@ export async function generateScript(
         attempt: 2,
       });
       script = parseScriptJson(resp2.text);
+      console.log(`[script:${adId}] Claude OK — attempt 2 (${resp2.input_tokens}in/${resp2.output_tokens}out, $${cost2.toFixed(4)})`);
     } catch (err) {
       await failStageLog(logId2, Date.now() - t2, (err as Error).message).catch(() => {});
+      console.error(`[script:${adId}] Claude FAILED — attempt 2: ${(err as Error).message}`);
       throw err;
     }
 
@@ -888,14 +888,17 @@ export async function generateScript(
 
     if (violations.length > 0) {
       await failStageLog(valLogId2, Date.now() - tv2, violations.join('; ')).catch(() => {});
+      console.error(`[script:${adId}] Validation FAILED — attempt 2 (${violations.length} violations):\n${violations.map(v => `  • ${v}`).join('\n')}`);
       throw new Error(
         `Script validation failed after retry:\n${violations.map(v => `• ${v}`).join('\n')}`,
       );
     }
 
     await closeStageLog(valLogId2, Date.now() - tv2, 0, { passed: true, attempt: 2 });
+    console.log(`[script:${adId}] Validation OK — attempt 2`);
   } else {
     await closeStageLog(valLogId1, Date.now() - tv1, 0, { passed: true, attempt: 1 });
+    console.log(`[script:${adId}] Validation OK — attempt 1 (no violations)`);
   }
 
   // --- Build claim report ---

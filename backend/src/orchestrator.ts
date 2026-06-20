@@ -109,8 +109,10 @@ async function runPipelineAsync(
 ): Promise<void> {
   try {
     // 1. Content Ingestion
+    console.log(`[pipeline:${adId}] Starting content ingestion`);
     await updateRunStatus(runId, 'ingesting', 'content_ingestion');
     const facts = await fetchExperienceFacts(userInput.experience_id, runId, adId);
+    console.log(`[pipeline:${adId}] Content ingestion OK — "${facts.title}"`);
 
     // 2. Resolve angle + hook descriptions from DB
     const [angleRow, hookRow] = await Promise.all([
@@ -128,6 +130,7 @@ async function runPipelineAsync(
     if (!hookRow.rows[0]) throw new Error(`Hook '${userInput.hook}' not found`);
 
     // 3. Script Generation + Validation
+    console.log(`[pipeline:${adId}] Starting script generation (angle=${userInput.angle}, hook=${userInput.hook})`);
     await updateRunStatus(runId, 'scripting', 'script_gen');
     const { script, claim_report } = await generateScript(
       facts,
@@ -137,8 +140,10 @@ async function runPipelineAsync(
       runId,
       adId,
     );
+    console.log(`[pipeline:${adId}] Script generation OK — ${script.video_script.scenes.length} scenes, ${script.video_script.total_duration_sec}s`);
 
     // 4. Video + Audio fan-out
+    console.log(`[pipeline:${adId}] Starting video + audio generation`);
     await updateRunStatus(runId, 'generating', 'video_gen + audio_gen');
 
     const contentScenes = script.video_script.scenes.filter(s => s.beat !== 'cta');
@@ -152,6 +157,8 @@ async function runPipelineAsync(
         ? generateVideoClips(nonLipSyncScenes, script, facts, runId, adId)
         : Promise.resolve<VideoClipResult[]>([]),
     ]);
+    console.log(`[pipeline:${adId}] Audio OK — ${voSegments.length} VO segments`);
+    console.log(`[pipeline:${adId}] Non-lip-sync video OK — ${nonLipSyncClips.length} clips`);
 
     // Step 2: Lip-sync clips — needs VO segments from Step 1
     let lipSyncClips: VideoClipResult[] = [];
@@ -159,18 +166,23 @@ async function runPipelineAsync(
       lipSyncClips = await generateVideoClips(
         lipSyncScenes, script, facts, runId, adId, voSegments,
       );
+      console.log(`[pipeline:${adId}] Lip-sync video OK — ${lipSyncClips.length} clips`);
     }
 
     const allClips = [...nonLipSyncClips, ...lipSyncClips].sort((a, b) => a.scene_id - b.scene_id);
+    console.log(`[pipeline:${adId}] All ${allClips.length} video clips ready`);
 
     // Budget check after video generation (most expensive stage)
     await checkBudget(runId, adId);
 
     // 5. Assembly
+    console.log(`[pipeline:${adId}] Starting assembly`);
     await updateRunStatus(runId, 'assembling', 'assembly');
     const assembly = await assembleAd(allClips, voSegments, script, userInput, runId, adId);
+    console.log(`[pipeline:${adId}] Assembly OK — ${assembly.files.length} output file(s)`);
 
     // 6. Export & Finalize
+    console.log(`[pipeline:${adId}] Starting export`);
     await updateRunStatus(runId, 'exporting', 'export');
     await exportAndFinalize(assembly, script, facts, claim_report, runId, adId);
 
@@ -179,9 +191,10 @@ async function runPipelineAsync(
       `UPDATE runs SET status = 'completed', current_stage = NULL WHERE id = $1`,
       [runId],
     );
-    console.log(`[pipeline] Run ${runId} (${adId}) completed`);
+    console.log(`[pipeline:${adId}] COMPLETED (run ${runId})`);
 
   } catch (error) {
+    console.error(`[pipeline:${adId}] FAILED (run ${runId}): ${(error as Error).message}`);
     await db.query(
       `UPDATE runs SET status = 'failed', error_message = $1, completed_at = NOW() WHERE id = $2`,
       [(error as Error).message, runId],
