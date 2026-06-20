@@ -6,6 +6,7 @@ export interface VoSegmentDef {
   sceneId: number;
   filePath: string;    // file:// URL or remote URL
   durationSec: number; // actual ElevenLabs output duration (may differ from script target)
+  lipSync?: boolean;   // true = segment's video already carries the audio; skip the VO track
 }
 
 export interface ClipDef {
@@ -13,6 +14,7 @@ export interface ClipDef {
   durationSec: number;
   beat: string;
   sceneId: number;
+  lipSync?: boolean;   // true = unmute video (audio baked in by Seedance); false = mute (VO track owns audio)
 }
 
 export interface AdProps {
@@ -55,9 +57,9 @@ export const AdComposition: React.FC<AdProps> = ({
 
   return (
     <AbsoluteFill style={{ backgroundColor: 'black' }}>
-      {/* Video clips — ALL muted (volume={0}).
-          Lip-sync clips have mouth movements baked in by Seedance, but their
-          embedded audio is discarded here. ElevenLabs VO is the only audio source. */}
+      {/* Video clips.
+          Lip-sync clips carry the ElevenLabs audio baked in by Seedance — unmuted (volume=1).
+          All other clips are silent — ElevenLabs VO track plays separately below. */}
       {clipsWithOffsets.map((clip, i) => (
         <Sequence
           from={clip.startFrame}
@@ -66,7 +68,7 @@ export const AdComposition: React.FC<AdProps> = ({
         >
           <OffthreadVideo
             src={clip.src}
-            volume={0}
+            volume={clip.lipSync ? 1 : 0}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         </Sequence>
@@ -77,16 +79,15 @@ export const AdComposition: React.FC<AdProps> = ({
         <EndCard {...endCard} />
       </Sequence>
 
-      {/* VO audio — one ElevenLabs segment per content scene.
-          Each segment is anchored to its clip's start frame. If a clip is missing
-          (partial failure) the VO for that scene is skipped via the null check. */}
+      {/* VO audio — ElevenLabs segments for non-lip-sync scenes only.
+          Lip-sync scenes use the video's own embedded audio track instead. */}
       {voSegments.map((seg, i) => {
+        if (seg.lipSync) return null; // video already has this audio baked in
+
         const startFrame = sceneStartFrame.get(seg.sceneId);
         const durationFrames = sceneFrameCount.get(seg.sceneId);
         if (startFrame === undefined || durationFrames === undefined) return null;
-        // Bound VO to its clip's frame window. Safe because the clip was requested at
-        // ceil(voDurationSec), so durationFrames >= actual VO length — no truncation,
-        // and the window prevents any bleed into the next scene's audio.
+
         return (
           <Sequence from={startFrame} durationInFrames={durationFrames} key={`vo-${i}`}>
             <Audio src={seg.filePath} volume={1} />
