@@ -142,6 +142,7 @@ export function Progress() {
   const { data, error } = usePolling(fetcher, {
     intervalMs: 2000,
     enabled: Boolean(adId),
+    restartKey: adId,
     stopWhen: (s: StatusResponse) => s.status === 'completed' || s.status === 'failed',
   });
 

@@ -6,6 +6,11 @@ export interface UsePollingOptions<T> {
   enabled?: boolean;
   /** Return true to stop polling (e.g. terminal status reached). */
   stopWhen?: (data: T) => boolean;
+  /**
+   * When this value changes, polling restarts (e.g. a new resource id after retry).
+   * Needed because a terminal `stopWhen` stops the loop until deps change.
+   */
+  restartKey?: unknown;
 }
 
 export interface UsePollingResult<T> {
@@ -20,7 +25,7 @@ export interface UsePollingResult<T> {
  */
 export function usePolling<T>(
   fetcher: () => Promise<T>,
-  { intervalMs, enabled = true, stopWhen }: UsePollingOptions<T>,
+  { intervalMs, enabled = true, stopWhen, restartKey }: UsePollingOptions<T>,
 ): UsePollingResult<T> {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -33,6 +38,9 @@ export function usePolling<T>(
 
   useEffect(() => {
     if (!enabled) return;
+
+    setData(null);
+    setError(null);
 
     let active = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -57,7 +65,7 @@ export function usePolling<T>(
       active = false;
       if (timer) clearTimeout(timer);
     };
-  }, [enabled, intervalMs]);
+  }, [enabled, intervalMs, restartKey]);
 
   return { data, error };
 }

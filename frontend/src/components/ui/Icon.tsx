@@ -6,13 +6,17 @@ export type IconName =
   | 'cross'
   | 'clock'
   | 'chevron-down'
+  | 'chevron-left'
+  | 'chevron-right'
   | 'arrow-left'
   | 'download'
   | 'play'
   | 'alert'
   | 'sparkle'
   | 'refresh'
-  | 'film';
+  | 'film'
+  | 'plus'
+  | 'clapperboard';
 
 const PATHS: Record<IconName, React.ReactNode> = {
   check: <path d="M4 12.5 9 17.5 20 6.5" />,
@@ -24,6 +28,8 @@ const PATHS: Record<IconName, React.ReactNode> = {
     </>
   ),
   'chevron-down': <path d="M6 9.5 12 15.5 18 9.5" />,
+  'chevron-left': <path d="M14.5 6 8.5 12 14.5 18" />,
+  'chevron-right': <path d="M9.5 6 15.5 12 9.5 18" />,
   'arrow-left': <path d="M19 12H5 M11 6 5 12 11 18" />,
   download: <path d="M12 4v11 M7.5 11 12 15.5 16.5 11 M5 19.5h14" />,
   play: <path d="M8 5.5 19 12 8 18.5Z" />,
@@ -39,6 +45,21 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <rect x="3.5" y="5" width="17" height="14" rx="2" />
       <path d="M8 5v14 M16 5v14 M3.5 12h17" />
+    </>
+  ),
+  plus: <path d="M12 4v16M4 12h16" />,
+  clapperboard: (
+    <>
+      {/* main board body */}
+      <rect x="3" y="9" width="18" height="12" rx="1.5" />
+      {/* horizontal divider between clapper strip and board */}
+      <path d="M3 13.5h18" />
+      {/* top clapper strip outline */}
+      <path d="M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v3" />
+      {/* diagonal stripes on the clapper strip */}
+      <path d="M8 5 6 9" />
+      <path d="M13 5 11 9" />
+      <path d="M18 5 16 9" />
     </>
   ),
 };

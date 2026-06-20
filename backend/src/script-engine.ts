@@ -411,14 +411,14 @@ function claimMatchesValue(claimText: string, factsValue: unknown): boolean {
   const factsNum = parseFloat(String(factsValue).replace(/[^0-9.]/g, ''));
   if (!isNaN(factsNum)) {
     // "over X / more than X / above X" — valid when facts value >= stated threshold
-    const overMatch = claimNorm.match(/(?:over|more than|above)\s*([\d.]+)/);
+    const overMatch = claimNorm.match(/\b(?:over|more than|above)\s*([\d.]+)/);
     if (overMatch) {
       const threshold = parseFloat(overMatch[1]);
       if (!isNaN(threshold) && factsNum >= threshold) return true;
     }
 
     // "under X / less than X / below X" — valid when facts value <= stated threshold
-    const underMatch = claimNorm.match(/(?:under|less than|below)\s*([\d.]+)/);
+    const underMatch = claimNorm.match(/\b(?:under|less than|below)\s*([\d.]+)/);
     if (underMatch) {
       const threshold = parseFloat(underMatch[1]);
       if (!isNaN(threshold) && factsNum <= threshold) return true;

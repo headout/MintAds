@@ -53,4 +53,35 @@ describe('usePolling', () => {
     await vi.advanceTimersByTimeAsync(5000);
     expect(fetcher).not.toHaveBeenCalled();
   });
+
+  it('restarts polling when restartKey changes after a terminal stop', async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce({ id: 'old', status: 'failed' })
+      .mockResolvedValueOnce({ id: 'new', status: 'generating' })
+      .mockResolvedValue({ id: 'new', status: 'generating' });
+
+    const { rerender } = renderHook(
+      ({ restartKey }: { restartKey: string }) =>
+        usePolling(fetcher, {
+          intervalMs: 2000,
+          restartKey,
+          stopWhen: (d: { status: string }) => d.status === 'completed' || d.status === 'failed',
+        }),
+      { initialProps: { restartKey: 'old' } },
+    );
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+
+    rerender({ restartKey: 'new' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(fetcher).toHaveBeenCalledTimes(3);
+  });
 });
