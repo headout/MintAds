@@ -17,9 +17,10 @@ RUN npm run build
 # ── Stage 3: runtime ─────────────────────────────────────────────────────────
 FROM node:20-slim AS runtime
 
-# ffmpeg (includes ffprobe) — required for audio duration probing
+# ffmpeg (includes ffprobe) + chromium shared libs required by Remotion's headless shell
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
+    chromium \
     ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
