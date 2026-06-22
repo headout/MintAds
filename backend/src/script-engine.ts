@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { db } from './db';
 import { callClaude } from './services/claude-client';
+import { DATA_RUNS_DIR } from './paths';
 import type {
   FactsJson,
   UserInput,
@@ -13,8 +14,6 @@ import type {
   HookDef,
   GlobalStyle,
 } from './types';
-
-const DATA_RUNS_DIR = path.resolve(__dirname, '../../data/runs');
 const COST_PER_1K_INPUT = 0.003;
 const COST_PER_1K_OUTPUT = 0.015;
 

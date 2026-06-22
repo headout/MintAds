@@ -5,6 +5,7 @@ import https from 'https';
 import http from 'http';
 import { fal } from '@fal-ai/client';
 import { db } from '../db';
+import { DATA_RUNS_DIR } from '../paths';
 import type {
   SceneJson,
   GlobalStyle,
@@ -29,8 +30,6 @@ const COST_PER_SEC = 0.2419;
 // ---------------------------------------------------------------------------
 
 fal.config({ credentials: process.env.FAL_KEY ?? '' });
-
-const DATA_RUNS_DIR = path.resolve(__dirname, '../../../data/runs');
 
 // ---------------------------------------------------------------------------
 // Audio upload — lip-sync scenes need the VO file as a CDN URL for fal.ai
