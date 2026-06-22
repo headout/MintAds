@@ -1,9 +1,21 @@
+import path from 'path';
+import { existsSync } from 'fs';
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { asyncHandler } from '../middleware';
 import { assembleAd } from '../services/remotion-client';
 import { exportAndFinalize } from '../orchestrator';
+import { DATA_RUNS_DIR } from '../paths';
 import type { VideoClipResult, VoSegmentResult, ScriptJson, UserInput, FactsJson, ClaimReport } from '../types';
+
+// Rebase a stored file_path to the current DATA_RUNS_DIR.
+// Handles paths saved by older deployments that used a different root
+// (e.g. /app/data/runs/... before the DATA_DIR env var was introduced).
+function normalizeFilePath(storedPath: string): string {
+  const match = storedPath.match(/[/\\]data[/\\]runs[/\\](.+)$/);
+  if (match) return path.join(DATA_RUNS_DIR, match[1]);
+  return storedPath;
+}
 
 const router = Router();
 
@@ -55,11 +67,20 @@ router.post('/runs/:ad_id/reassemble', asyncHandler(async (req: Request, res: Re
       scene_id: params.scene_id as number,
       beat: params.beat as string,
       shot_type: params.shot_type as VideoClipResult['shot_type'],
-      file_path: result.file_path as string,
+      file_path: normalizeFilePath(result.file_path as string),
       remote_url: (result.remote_url ?? '') as string,
       duration_sec: result.duration_sec as number,
     };
   });
+
+  // Verify clip files are actually on disk — runs generated before the volume
+  // was set up saved clips to the ephemeral container FS, which is gone after redeploy.
+  const missingClip = clips.find((c) => !existsSync(c.file_path));
+  if (missingClip) {
+    return res.status(422).json({
+      error: `Clip files are missing from disk (scene ${missingClip.scene_id}: ${missingClip.file_path}). This run was generated before persistent storage was configured — please generate a new run.`,
+    });
+  }
 
   // 3. Reconstruct VoSegmentResult[] from completed audio_gen_scene_* stage logs
   const voLogsRes = await db.query(
@@ -74,7 +95,7 @@ router.post('/runs/:ad_id/reassemble', asyncHandler(async (req: Request, res: Re
     const sceneId = parseInt((row.stage as string).replace('audio_gen_scene_', ''), 10);
     return {
       scene_id: sceneId,
-      file_path: result.file_path as string,
+      file_path: normalizeFilePath(result.file_path as string),
       duration_sec: (result.actual_duration_sec ?? result.target_duration_sec ?? 0) as number,
       characters: (result.characters ?? 0) as number,
     };
