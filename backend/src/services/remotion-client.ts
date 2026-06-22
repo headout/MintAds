@@ -20,7 +20,9 @@ import type {
 // Paths
 // ---------------------------------------------------------------------------
 
-const DATA_RUNS_DIR = path.resolve(__dirname, '../../../data/runs');
+const DATA_RUNS_DIR = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR, 'runs')
+  : path.resolve(__dirname, '../../../data/runs');
 const REMOTION_DIR = path.resolve(__dirname, '../../../remotion');
 const REMOTION_ENTRY = path.join(REMOTION_DIR, 'src/index.ts');
 

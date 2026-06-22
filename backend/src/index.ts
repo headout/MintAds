@@ -15,15 +15,17 @@ import runsRouter from './routes/runs';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Ensure data/runs directory exists (gitignored, so not in repo)
-const DATA_DIR = path.resolve(__dirname, '../../data/runs');
-fs.mkdirSync(DATA_DIR, { recursive: true });
+// Data root — defaults to monorepo data/ in dev; set DATA_DIR env var in production (Railway volume)
+const DATA_ROOT = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR)
+  : path.resolve(__dirname, '../../data');
+fs.mkdirSync(path.join(DATA_ROOT, 'runs'), { recursive: true });
 
 app.use(cors());
 app.use(express.json());
 
 // Serve generated media files
-app.use('/data', express.static(path.resolve(__dirname, '../../data')));
+app.use('/data', express.static(DATA_ROOT));
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -36,6 +38,16 @@ app.use('/api', statusRouter);
 app.use('/api', outputRouter);
 app.use('/api', configRouter);
 app.use('/api', runsRouter);
+
+// Serve React SPA in production — Express serves the Vite build from the same origin,
+// so the frontend needs no VITE_API_URL env var and no CORS headers for API calls.
+const FRONTEND_DIST = path.resolve(__dirname, '../../frontend/dist');
+if (fs.existsSync(FRONTEND_DIST)) {
+  app.use(express.static(FRONTEND_DIST));
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+  });
+}
 
 // Error-handling middleware — must be registered last, after all routes.
 // Catches errors forwarded by asyncHandler so a failing DB/3rd-party call
