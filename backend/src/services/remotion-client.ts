@@ -6,6 +6,7 @@ import express from 'express';
 import { bundle } from '@remotion/bundler';
 import { renderMedia, selectComposition } from '@remotion/renderer';
 import { db } from '../db';
+import { DATA_RUNS_DIR } from '../paths';
 import type {
   VideoClipResult,
   VoSegmentResult,
@@ -20,9 +21,6 @@ import type {
 // Paths
 // ---------------------------------------------------------------------------
 
-const DATA_RUNS_DIR = process.env.DATA_DIR
-  ? path.resolve(process.env.DATA_DIR, 'runs')
-  : path.resolve(__dirname, '../../../data/runs');
 const REMOTION_DIR = path.resolve(__dirname, '../../../remotion');
 const REMOTION_ENTRY = path.join(REMOTION_DIR, 'src/index.ts');
 

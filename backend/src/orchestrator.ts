@@ -6,6 +6,7 @@ import { generateScript } from './script-engine';
 import { generateAllVoSegments } from './services/elevenlabs-client';
 import { generateVideoClips } from './services/fal-client';
 import { assembleAd } from './services/remotion-client';
+import { DATA_RUNS_DIR } from './paths';
 import type {
   UserInput,
   FactsJson,
@@ -14,8 +15,6 @@ import type {
   VideoClipResult,
   AssemblyResult,
 } from './types';
-
-const DATA_RUNS_DIR = path.resolve(__dirname, '../../data/runs');
 
 // ---------------------------------------------------------------------------
 // Ad ID generation

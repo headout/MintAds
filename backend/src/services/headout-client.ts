@@ -1,12 +1,12 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '../db';
+import { DATA_RUNS_DIR } from '../paths';
 import type { FactsJson } from '../types';
 
 const HEADOUT_BASE = 'https://www.headout.com';
 const TIMEOUT_MS = 10_000;
 const RETRY_DELAY_MS = 3_000;
-const DATA_RUNS_DIR = path.resolve(__dirname, '../../../data/runs');
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: '€', USD: '$', GBP: '£', AED: 'AED ',

@@ -5,6 +5,7 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 import { db } from '../db';
+import { DATA_RUNS_DIR } from '../paths';
 import type { VoSegment, VoSegmentResult, ScriptJson } from '../types';
 
 const execFileAsync = promisify(execFile);
@@ -19,8 +20,6 @@ const COST_PER_1K_CHARS = 0.03;
 
 // Warn (but don't fail) if actual VO duration drifts more than this from target
 const DURATION_WARN_THRESHOLD_SEC = 3;
-
-const DATA_RUNS_DIR = path.resolve(__dirname, '../../../data/runs');
 
 // ---------------------------------------------------------------------------
 // ElevenLabs client (lazy init)
