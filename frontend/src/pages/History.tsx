@@ -24,6 +24,8 @@ export function History() {
   const [runs, setRuns] = useState<RunListItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
+  const [reassembling, setReassembling] = useState<string | null>(null);
+  const [reassembleError, setReassembleError] = useState<{ adId: string; message: string } | null>(null);
 
   const load = useCallback(async () => {
     setRuns(null);
@@ -40,6 +42,22 @@ export function History() {
     void load();
   }, [load]);
 
+  const handleReassemble = useCallback(async (e: React.MouseEvent, adId: string) => {
+    e.stopPropagation();
+    setReassembling(adId);
+    setReassembleError(null);
+    try {
+      await api.reassemble(adId);
+      navigate(`/progress/${encodeURIComponent(adId)}`);
+    } catch (err) {
+      setReassembleError({
+        adId,
+        message: err instanceof ApiError ? err.message : 'Failed to start reassembly.',
+      });
+      setReassembling(null);
+    }
+  }, [navigate]);
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -50,7 +68,7 @@ export function History() {
       </div>
 
       {error ? (
-        <ErrorState title="Couldn’t load history" message={error} action={<Button onClick={load}>Try again</Button>} />
+        <ErrorState title="Couldn't load history" message={error} action={<Button onClick={load}>Try again</Button>} />
       ) : runs === null ? (
         <div className={styles.tableWrap} style={{ padding: 'var(--space-16)' }}>
           {Array.from({ length: 5 }).map((_, i) => (
@@ -76,6 +94,7 @@ export function History() {
                 <th className="t-cta-sm">Cost</th>
                 <th className="t-cta-sm">Duration</th>
                 <th className="t-cta-sm">Created</th>
+                <th className="t-cta-sm"></th>
               </tr>
             </thead>
             <tbody>
@@ -99,6 +118,23 @@ export function History() {
                   <td className={`${styles.numeric} t-para-md`}>{formatCost(run.total_cost_usd)}</td>
                   <td className={`${styles.numeric} t-para-md`}>{formatDurationSec(run.duration_sec)}</td>
                   <td className={`${styles.muted} t-para-md`}>{formatRelativeTime(run.created_at)}</td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    {run.status === 'failed' && (
+                      <div>
+                        <Button
+                          size="sm"
+                          variant="tertiary"
+                          disabled={reassembling === run.ad_id}
+                          onClick={(e) => handleReassemble(e, run.ad_id)}
+                        >
+                          {reassembling === run.ad_id ? 'Starting…' : 'Re-assemble'}
+                        </Button>
+                        {reassembleError?.adId === run.ad_id && (
+                          <div className={styles.reassembleError}>{reassembleError.message}</div>
+                        )}
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

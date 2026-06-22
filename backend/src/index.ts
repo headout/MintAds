@@ -11,6 +11,7 @@ import statusRouter from './routes/status';
 import outputRouter from './routes/output';
 import configRouter from './routes/config';
 import runsRouter from './routes/runs';
+import reassembleRouter from './routes/reassemble';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,6 +39,7 @@ app.use('/api', statusRouter);
 app.use('/api', outputRouter);
 app.use('/api', configRouter);
 app.use('/api', runsRouter);
+app.use('/api', reassembleRouter);
 
 // Serve React SPA in production — Express serves the Vite build from the same origin,
 // so the frontend needs no VITE_API_URL env var and no CORS headers for API calls.

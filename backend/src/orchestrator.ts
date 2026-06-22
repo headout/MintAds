@@ -206,7 +206,7 @@ async function runPipelineAsync(
 // Export & Finalize
 // ---------------------------------------------------------------------------
 
-async function exportAndFinalize(
+export async function exportAndFinalize(
   assembly: AssemblyResult,
   script: ScriptJson,
   facts: FactsJson,

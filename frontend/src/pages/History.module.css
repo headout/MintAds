@@ -72,3 +72,11 @@
 .numeric {
   font-variant-numeric: tabular-nums;
 }
+
+.reassembleError {
+  margin-top: var(--space-4);
+  font-size: var(--fs-12);
+  color: var(--color-error, #d32f2f);
+  max-width: 180px;
+  white-space: normal;
+}

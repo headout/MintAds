@@ -84,4 +84,9 @@ export const api = {
 
   listRuns: (params: ListRunsParams = {}) =>
     request<RunListItem[]>(`/api/runs${buildQuery({ ...params })}`),
+
+  reassemble: (adId: string) =>
+    request<{ ad_id: string; run_id: number }>(`/api/runs/${encodeURIComponent(adId)}/reassemble`, {
+      method: 'POST',
+    }),
 };
