@@ -34,6 +34,7 @@ RUN cd backend && npm ci --omit=dev
 COPY remotion/package*.json ./remotion/
 RUN cd remotion && npm ci
 COPY remotion/src/ ./remotion/src/
+COPY remotion/public/ ./remotion/public/
 
 # Compiled backend JS
 COPY --from=backend-builder /build/backend/dist ./backend/dist
