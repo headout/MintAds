@@ -1,0 +1,32 @@
+Headout has 10,000+ experiences. Fewer than 50 had an ad.
+
+MintAds fixes that. Drop in an experience ID → get a UGC-style video ad in 3 formats (9:16, 1:1, 16:9) in ~3 minutes, fully sourced from live catalog data, for ~$4.
+
+Built in-house by the growth team.
+
+---
+
+Short version (for Slack / WhatsApp):
+We built MintAds — drop in an experience ID, get a video ad. 3 formats, 3 minutes, ~$4. Experience ID in. Video ad out.
+
+---
+
+LinkedIn version:
+Headout has 10,000+ experiences. When we audited how many had dedicated ad creative, the number was under 50.
+
+So we built MintAds — an AI pipeline that turns any experience ID into campaign-ready UGC video ads in 9:16, 1:1 and 16:9, in about 3 minutes.
+
+Every on-screen claim is pulled from real catalog data. The whole thing costs ~$4 per run.
+
+Experience ID in. Video ad out.
+
+Built by Rushi Savaliya, Rohan, and Gokul on the Headout growth team.
+
+---
+
+Twitter / X version:
+We gave every Headout experience an ad team.
+
+Drop in an experience ID → UGC-style video in 9:16, 1:1, 16:9. ~3 minutes. ~$4.
+
+10,000 experiences. Now they all have an ad.

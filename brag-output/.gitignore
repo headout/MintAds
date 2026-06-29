@@ -1,0 +1,12 @@
+# Generated renders — too large for git
+mintads/renders/
+mintads/.thumbnails/
+mintads/.waveform-cache/
+
+# Large binary assets — re-copy from source as needed
+mintads/assets/music/
+mintads/assets/video/
+mintads/capture/
+
+# Old/duplicate output directory
+composition/

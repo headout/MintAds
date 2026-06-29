@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1280, height=720">
+    <style>
+      @font-face {
+        font-family: 'DM Sans';
+        font-style: normal;
+        font-weight: 400 700;
+        font-display: swap;
+        src: url('capture/assets/fonts/DMSans.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 400 600;
+        font-display: swap;
+        src: url('capture/assets/fonts/Inter.woff2') format('woff2');
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        width: 1280px;
+        height: 720px;
+        overflow: hidden;
+        background: #fff;
+        font-family: 'Inter', sans-serif;
+      }
+
+      /* ── Palette ─────────────────────────────── */
+      :root {
+        --purple:   #8000ff;
+        --black:    #111111;
+        --grey1:    #374151;
+        --grey2:    #6b7280;
+        --grey3:    #9ca3af;
+        --border:   #e5e7eb;
+        --bg:       #ffffff;
+        --surface:  #f9fafb;
+      }
+
+      /* ── Scene base ──────────────────────────── */
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 1280px;
+        height: 720px;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* ── SCENE 1: Hook ────────────────────────── */
+      #scene-hook {
+        flex-direction: column;
+        gap: 0;
+      }
+      .hook-line {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 72px;
+        font-weight: 700;
+        color: var(--black);
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        text-align: center;
+      }
+      .hook-line.accent { color: var(--purple); }
+      .hook-divider {
+        width: 48px;
+        height: 4px;
+        background: var(--purple);
+        border-radius: 2px;
+        margin: 24px auto;
+      }
+
+      /* ── SCENE 2: Generate Form ────────────────── */
+      #scene-form {
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+      }
+      .form-card {
+        background: #fff;
+        border: 1.5px solid var(--border);
+        border-radius: 20px;
+        padding: 48px 52px;
+        width: 560px;
+        box-shadow: 0 4px 32px rgba(0,0,0,0.07);
+      }
+      .form-title {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--black);
+        margin-bottom: 32px;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--grey1);
+        margin-bottom: 7px;
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .form-input {
+        width: 100%;
+        height: 48px;
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 0 16px;
+        font-size: 16px;
+        font-family: 'Inter', sans-serif;
+        color: var(--black);
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+      }
+      .form-input.filled {
+        border-color: var(--purple);
+        color: var(--black);
+      }
+      .form-input.filled .cursor {
+        display: inline-block;
+        width: 2px;
+        height: 18px;
+        background: var(--purple);
+        margin-left: 1px;
+        vertical-align: middle;
+      }
+      .form-select {
+        width: 100%;
+        height: 48px;
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 0 16px;
+        font-size: 15px;
+        font-family: 'Inter', sans-serif;
+        color: var(--grey3);
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .form-select.selected {
+        color: var(--black);
+        border-color: var(--border);
+      }
+      .select-chevron {
+        color: var(--grey3);
+        font-size: 12px;
+      }
+      .form-row { display: flex; gap: 12px; }
+      .form-row .form-group { flex: 1; }
+
+      .btn-generate {
+        width: 100%;
+        height: 52px;
+        background: var(--purple);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 17px;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        letter-spacing: 0.01em;
+        box-shadow: 0 2px 12px rgba(128,0,255,0.25);
+      }
+
+      /* ── SCENE 3: Progress Tracker ─────────────── */
+      #scene-progress {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .progress-wrap {
+        width: 620px;
+      }
+      .progress-title {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--black);
+        margin-bottom: 28px;
+        padding-left: 4px;
+      }
+      .stage-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 20px;
+        border-radius: 12px;
+        margin-bottom: 8px;
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        opacity: 0;
+      }
+      .stage-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .stage-icon.pending {
+        background: #f3f4f6;
+        color: var(--grey3);
+      }
+      .stage-icon.done {
+        background: var(--purple);
+        color: #fff;
+      }
+      .stage-label {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--grey1);
+        flex: 1;
+      }
+      .stage-row.done-row .stage-label { color: var(--black); }
+      .stage-meta {
+        font-size: 13px;
+        color: var(--grey3);
+        font-variant-numeric: tabular-nums;
+      }
+      .cost-ticker {
+        margin-top: 20px;
+        padding-left: 4px;
+        font-size: 14px;
+        color: var(--grey2);
+        font-variant-numeric: tabular-nums;
+      }
+      .cost-ticker span {
+        color: var(--purple);
+        font-weight: 700;
+        font-size: 16px;
+      }
+
+      /* ── SCENE 4: Output ───────────────────────── */
+      #scene-output {
+        gap: 32px;
+        align-items: flex-start;
+        padding-top: 60px;
+      }
+      .output-left { width: 460px; }
+      .output-right { width: 300px; padding-top: 8px; }
+
+      .output-title {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--black);
+        margin-bottom: 18px;
+      }
+
+      .video-card {
+        background: #111;
+        border-radius: 16px;
+        height: 260px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 16px;
+        position: relative;
+        overflow: hidden;
+      }
+      .video-play {
+        width: 56px;
+        height: 56px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+      }
+      .play-triangle {
+        width: 0;
+        height: 0;
+        border-top: 10px solid transparent;
+        border-bottom: 10px solid transparent;
+        border-left: 18px solid #fff;
+        margin-left: 3px;
+      }
+      .video-label {
+        position: absolute;
+        bottom: 12px;
+        left: 14px;
+        font-size: 11px;
+        color: rgba(255,255,255,0.5);
+        font-family: 'Inter', monospace;
+        letter-spacing: 0.06em;
+      }
+
+      .format-badges {
+        display: flex;
+        gap: 10px;
+        margin-top: 4px;
+      }
+      .badge {
+        height: 32px;
+        padding: 0 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: scale(0.85);
+      }
+      .badge.purple { background: var(--purple); color: #fff; }
+      .badge.outline { background: transparent; border: 1.5px solid var(--border); color: var(--grey1); }
+
+      .cost-card {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 16px;
+        padding: 24px 22px;
+        margin-bottom: 14px;
+      }
+      .cost-card-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--grey2);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 14px;
+      }
+      .cost-line {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+        color: var(--grey1);
+        margin-bottom: 8px;
+      }
+      .cost-total-line {
+        display: flex;
+        justify-content: space-between;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--black);
+        border-top: 1px solid var(--border);
+        padding-top: 12px;
+        margin-top: 8px;
+      }
+      .cost-total-line .amount { color: var(--purple); }
+
+      .meta-card {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 16px;
+        padding: 18px 22px;
+        display: flex;
+        gap: 18px;
+      }
+      .meta-item { flex: 1; }
+      .meta-key {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--grey3);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        margin-bottom: 4px;
+      }
+      .meta-val {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--black);
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ── SCENE 5: Phone showcase ──────────────────── */
+      #scene-phone {
+        background: #f5f5f7;
+        flex-direction: row;
+        gap: 64px;
+        align-items: center;
+        justify-content: center;
+      }
+      .phone-outer {
+        width: 286px;
+        height: 570px;
+        background: #1c1c1e;
+        border-radius: 48px;
+        position: relative;
+        box-shadow:
+          0 40px 100px rgba(0,0,0,0.22),
+          0 0 0 1px rgba(255,255,255,0.08),
+          inset 0 0 0 2px #2a2a2a;
+        flex-shrink: 0;
+      }
+      .phone-notch {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 110px;
+        height: 30px;
+        background: #1c1c1e;
+        border-radius: 0 0 20px 20px;
+        z-index: 3;
+      }
+      .phone-screen {
+        position: absolute;
+        top: 12px;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        border-radius: 40px;
+        overflow: hidden;
+        background: #000;
+      }
+      .phone-screen video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .phone-home-bar {
+        position: absolute;
+        bottom: 6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 4px;
+        background: rgba(255,255,255,0.3);
+        border-radius: 2px;
+        z-index: 3;
+      }
+      .phone-caption {
+        opacity: 0;
+      }
+      .phone-caption-eyebrow {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--grey2);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 12px;
+      }
+      .phone-caption-title {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--black);
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        margin-bottom: 16px;
+      }
+      .phone-caption-sub {
+        font-size: 16px;
+        color: var(--grey1);
+        line-height: 1.6;
+        margin-bottom: 24px;
+      }
+      .phone-badge-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .phone-badge {
+        height: 30px;
+        padding: 0 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+      }
+      .phone-badge.pill-purple { background: var(--purple); color: #fff; }
+      .phone-badge.pill-outline { background: transparent; border: 1.5px solid var(--border); color: var(--grey1); }
+
+      /* ── SCENE 6: Logo ─────────────────────────── */
+      #scene-logo {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+      .logo-wordmark {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 64px;
+        font-weight: 700;
+        color: var(--purple);
+        letter-spacing: -0.02em;
+      }
+      .logo-wordmark span { color: var(--black); }
+      .logo-tagline {
+        font-size: 22px;
+        color: var(--grey1);
+        font-weight: 500;
+        letter-spacing: 0.01em;
+      }
+      .logo-credits {
+        font-size: 14px;
+        color: var(--grey3);
+        margin-top: 8px;
+      }
+      .logo-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--purple);
+        border-radius: 50%;
+        margin: 8px auto 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ═══════════════════════════════════════════
+         ROOT COMPOSITION  — 28 seconds total
+         ═══════════════════════════════════════ -->
+    <div data-hf-id="hf-mkun" id="root" data-composition-id="main" data-start="0" data-duration="28" data-width="1280" data-height="720">
+
+      <!-- ── MUSIC ─────────────────────────────── -->
+      <audio data-hf-id="hf-tpgm" id="bgm" class="clip" data-start="0" data-duration="28" data-track-index="0" data-volume="0.5" src="assets/music/happy-beats-business-moves-vol-10-by-ende-dot-app.mp3"></audio>
+
+      <!-- ═══════════════════════════════════════
+           SCENE 1 — Hook  (0→4s)
+           ═══════════════════════════════════ -->
+      <div data-hf-id="hf-jzqt" id="scene-hook" class="clip scene" data-start="0" data-duration="4" data-track-index="1">
+        <div data-hf-id="hf-ro29" id="hook-line1" class="hook-line" style="opacity:0">10,000+ experiences.</div>
+        <div data-hf-id="hf-jrgj" id="hook-divider" class="hook-divider" style="opacity:0; transform:scaleX(0)"></div>
+        <div data-hf-id="hf-i2n5" id="hook-line2" class="hook-line accent" style="opacity:0">Fewer than 50 had an ad.</div>
+      </div>
+
+      <!-- ═══════════════════════════════════════
+           SCENE 2 — The Input  (4→9s)
+           ═══════════════════════════════════ -->
+      <div data-hf-id="hf-b4pq" id="scene-form" class="clip scene" data-start="4" data-duration="5" data-track-index="1" style="opacity:0">
+        <div data-hf-id="hf-b3ix" class="form-card">
+          <div data-hf-id="hf-22ar" class="form-title">Create a new ad</div>
+
+          <div data-hf-id="hf-dx00" class="form-group">
+            <label data-hf-id="hf-nldr" class="form-label">Experience ID</label>
+            <div data-hf-id="hf-ipq1" class="form-input filled" id="exp-field">
+              <span data-hf-id="hf-7klp" id="exp-text"></span><span data-hf-id="hf-fwxv" class="cursor" id="cursor"></span>
+            </div>
+          </div>
+
+          <div data-hf-id="hf-orr9" class="form-row">
+            <div data-hf-id="hf-1m3s" class="form-group">
+              <label data-hf-id="hf-zd86" class="form-label">Persona</label>
+              <div data-hf-id="hf-whzb" class="form-select" id="sel-persona" style="opacity:0.4">
+                <span data-hf-id="hf-1tjl">Solo Traveller</span><span data-hf-id="hf-1itj" class="select-chevron">▾</span>
+              </div>
+            </div>
+            <div data-hf-id="hf-0f6p" class="form-group">
+              <label data-hf-id="hf-n9w5" class="form-label">Angle</label>
+              <div data-hf-id="hf-phli" class="form-select" id="sel-angle" style="opacity:0.4">
+                <span data-hf-id="hf-oiiq">Curiosity</span><span data-hf-id="hf-ub3b" class="select-chevron">▾</span>
+              </div>
+            </div>
+          </div>
+
+          <div data-hf-id="hf-0thq" class="form-group">
+            <label data-hf-id="hf-y4dl" class="form-label">Hook</label>
+            <div data-hf-id="hf-frxu" class="form-select" id="sel-hook" style="opacity:0.4">
+              <span data-hf-id="hf-5zhd">Storyteller hook</span><span data-hf-id="hf-twsa" class="select-chevron">▾</span>
+            </div>
+          </div>
+
+          <button data-hf-id="hf-nfh7" class="btn-generate" id="btn-gen" style="opacity:0">Generate ad</button>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════
+           SCENE 3 — Pipeline  (9→15s)
+           ═══════════════════════════════════ -->
+      <div data-hf-id="hf-8c2x" id="scene-progress" class="clip scene" data-start="9" data-duration="6" data-track-index="1" style="opacity:0">
+        <div data-hf-id="hf-ysia" class="progress-wrap">
+          <div data-hf-id="hf-8y8y" class="progress-title">Generating your ad…</div>
+
+          <div data-hf-id="hf-yyar" class="stage-row" id="s1">
+            <div data-hf-id="hf-n1pg" class="stage-icon pending" id="s1-icon">○</div>
+            <div data-hf-id="hf-oslu" class="stage-label">Content ingestion</div>
+            <div data-hf-id="hf-cdrk" class="stage-meta" id="s1-meta"></div>
+          </div>
+          <div data-hf-id="hf-qaew" class="stage-row" id="s2">
+            <div data-hf-id="hf-m9pn" class="stage-icon pending" id="s2-icon">○</div>
+            <div data-hf-id="hf-wd4q" class="stage-label">Script generation</div>
+            <div data-hf-id="hf-yaqp" class="stage-meta" id="s2-meta"></div>
+          </div>
+          <div data-hf-id="hf-r22p" class="stage-row" id="s3">
+            <div data-hf-id="hf-tci2" class="stage-icon pending" id="s3-icon">○</div>
+            <div data-hf-id="hf-0pr8" class="stage-label">Video generation</div>
+            <div data-hf-id="hf-jn6q" class="stage-meta" id="s3-meta"></div>
+          </div>
+          <div data-hf-id="hf-g6l2" class="stage-row" id="s4">
+            <div data-hf-id="hf-n9gp" class="stage-icon pending" id="s4-icon">○</div>
+            <div data-hf-id="hf-xlbj" class="stage-label">Assembly</div>
+            <div data-hf-id="hf-kmj7" class="stage-meta" id="s4-meta"></div>
+          </div>
+          <div data-hf-id="hf-mcav" class="stage-row" id="s5">
+            <div data-hf-id="hf-qtxs" class="stage-icon pending" id="s5-icon">○</div>
+            <div data-hf-id="hf-ybnt" class="stage-label">Export</div>
+            <div data-hf-id="hf-tu5w" class="stage-meta" id="s5-meta"></div>
+          </div>
+
+          <div data-hf-id="hf-0h6p" class="cost-ticker">Total cost: <span data-hf-id="hf-1zrf" id="cost-val">$0.00</span></div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════
+           SCENE 4 — Output  (15→20s)
+           ═══════════════════════════════════ -->
+      <div data-hf-id="hf-qzpz" id="scene-output" class="clip scene" data-start="15" data-duration="5" data-track-index="1" style="opacity:0">
+        <div data-hf-id="hf-458b" class="output-left">
+          <div data-hf-id="hf-rmol" class="output-title">Your ad is ready</div>
+          <div data-hf-id="hf-h0jb" class="video-card" id="vid-card" style="opacity:0">
+            <div data-hf-id="hf-bes4" class="video-play">
+              <div data-hf-id="hf-wu6n" class="play-triangle"></div>
+            </div>
+            <div data-hf-id="hf-3qw9" class="video-label">HDO_META_7148_Colosseum_UGC_EN_v01</div>
+          </div>
+          <div data-hf-id="hf-zwdu" class="format-badges">
+            <div data-hf-id="hf-plds" class="badge purple" id="b1">9:16</div>
+            <div data-hf-id="hf-d6fd" class="badge outline" id="b2">1:1</div>
+            <div data-hf-id="hf-0dd2" class="badge outline" id="b3">16:9</div>
+          </div>
+        </div>
+
+        <div data-hf-id="hf-rk3q" class="output-right">
+          <div data-hf-id="hf-ftbn" class="cost-card" id="cost-card" style="opacity:0">
+            <div data-hf-id="hf-vqrd" class="cost-card-title">Cost breakdown</div>
+            <div data-hf-id="hf-th4e" class="cost-line"><span data-hf-id="hf-sdk7">Claude (script)</span><span data-hf-id="hf-wkuo">$0.18</span></div>
+            <div data-hf-id="hf-evw2" class="cost-line"><span data-hf-id="hf-665q">fal.ai (video)</span><span data-hf-id="hf-4iny">$3.62</span></div>
+            <div data-hf-id="hf-fa73" class="cost-line"><span data-hf-id="hf-veeq">ElevenLabs (VO)</span><span data-hf-id="hf-vqc4">$0.32</span></div>
+            <div data-hf-id="hf-4v8l" class="cost-total-line"><span data-hf-id="hf-7qep">Total</span><span data-hf-id="hf-jami" class="amount">$4.12</span></div>
+          </div>
+          <div data-hf-id="hf-7smb" class="meta-card" id="meta-card" style="opacity:0">
+            <div data-hf-id="hf-sswt" class="meta-item">
+              <div data-hf-id="hf-cmv1" class="meta-key">Duration</div>
+              <div data-hf-id="hf-qn6e" class="meta-val">2m 47s</div>
+            </div>
+            <div data-hf-id="hf-1fu9" class="meta-item">
+              <div data-hf-id="hf-jdfn" class="meta-key">Formats</div>
+              <div data-hf-id="hf-h162" class="meta-val">3 videos</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════
+           SCENE 5 — Phone showcase  (20→26s)
+           ═══════════════════════════════════ -->
+      <div data-hf-id="hf-e2zl" id="scene-phone" class="clip scene" data-start="20" data-duration="6" data-track-index="1" style="opacity:0">
+        <!-- Phone frame -->
+        <div data-hf-id="hf-kh34" class="phone-outer" id="phone-mockup">
+          <div data-hf-id="hf-c27x" class="phone-notch"></div>
+          <div data-hf-id="hf-9o7x" class="phone-screen">
+            <video data-hf-id="hf-jdb1" id="phone-video" class="clip" data-start="20" data-duration="6" data-track-index="2" muted playsinline src="assets/video/ad-eiffel.mp4">
+              <source data-hf-id="hf-i88q" src="assets/video/ad-eiffel.mp4" type="video/mp4">
+            </video>
+          </div>
+          <div data-hf-id="hf-7u7s" class="phone-home-bar"></div>
+        </div>
+
+        <!-- Caption right of phone -->
+        <div data-hf-id="hf-uhbo" class="phone-caption" id="phone-caption">
+          <div data-hf-id="hf-r48r" class="phone-caption-eyebrow">The output</div>
+          <div data-hf-id="hf-irqh" class="phone-caption-title">From ID<br data-hf-id="hf-x5px">to ad.</div>
+          <div data-hf-id="hf-qt3r" class="phone-caption-sub">Eiffel Tower · Paris<br data-hf-id="hf-rsrt">3 formats · 3 minutes · ~$4</div>
+          <div data-hf-id="hf-jr8x" class="phone-badge-row">
+            <div data-hf-id="hf-t9kq" class="phone-badge pill-purple">9:16</div>
+            <div data-hf-id="hf-d3qc" class="phone-badge pill-outline">1:1</div>
+            <div data-hf-id="hf-24bk" class="phone-badge pill-outline">16:9</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════
+           SCENE 6 — Logo  (26→28s)
+           ═══════════════════════════════════ -->
+      <div data-hf-id="hf-78u4" id="scene-logo" class="clip scene" data-start="26" data-duration="2" data-track-index="1" style="opacity:0">
+        <div data-hf-id="hf-hrav" id="logo-dot" class="logo-dot" style="opacity:0; transform:scaleX(0)"></div>
+        <div data-hf-id="hf-w2ui" id="logo-wm" class="logo-wordmark" style="opacity:0">
+          Mint<span data-hf-id="hf-4s8d">Ads</span>
+        </div>
+        <div data-hf-id="hf-yvb7" id="logo-tag" class="logo-tagline" style="opacity:0">Experience ID in. Video ad out.</div>
+        <div data-hf-id="hf-qfol" id="logo-cred" class="logo-credits" style="opacity:0">Built by Rushi · Rohan · Gokul</div>
+      </div>
+
+    </div><!-- /#root -->
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      /* ─────────────────────────────────────────────
+         SCENE 1 — Hook  (0→4s)
+         Line 1 fades in at 0.3s (on beat 0.27)
+         Divider wipes at 1.5s
+         Line 2 fades in at 1.8s (on beat 1.90)
+         ───────────────────────────────────────── */
+      tl.to("#hook-line1", { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 0.27) // beat-locked: 0.27s
+        .to("#hook-divider", { opacity: 1, scaleX: 1, duration: 0.4, ease: "power3.out", transformOrigin: "left center" }, 1.4)
+        .to("#hook-line2", { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 1.90); // beat-locked: 1.90s
+
+      /* ─────────────────────────────────────────────
+         SCENE 2 — Form  (4→9s)
+         Card fades in at 4.1s
+         "7148" types in char by char starting 4.5s
+         Dropdowns snap in: 5.5s, 6.1s, 6.6s (beat-grid: ~0.55s apart)
+         Button appears at 7.8s
+         ───────────────────────────────────────── */
+      tl.to("#scene-form", { opacity: 1, duration: 0.35, ease: "power2.out" }, 4.1)
+
+        // Typing "7148" — 4 chars, 0.12s apart starting 4.5s
+        .call(() => { document.getElementById('exp-text').textContent = '7'; }, [], 4.64)   // beat: 4.64s
+        .call(() => { document.getElementById('exp-text').textContent = '71'; }, [], 4.73)
+        .call(() => { document.getElementById('exp-text').textContent = '714'; }, [], 4.82)
+        .call(() => {
+          document.getElementById('exp-text').textContent = '7148';
+          document.getElementById('cursor').style.display = 'none';
+        }, [], 4.91)
+
+        // Dropdowns snap in — beat-grid ~0.55s apart starting 5.19s
+        .to("#sel-persona", { opacity: 1, duration: 0.25, ease: "back.out(1.5)" }, 5.19)    // beat-grid: 5.19s
+        .call(() => document.getElementById('sel-persona').classList.add('selected'), [], 5.19)
+        .to("#sel-angle",   { opacity: 1, duration: 0.25, ease: "back.out(1.5)" }, 5.74)    // beat-grid: 5.74s
+        .call(() => document.getElementById('sel-angle').classList.add('selected'), [], 5.74)
+        .to("#sel-hook",    { opacity: 1, duration: 0.25, ease: "back.out(1.5)" }, 6.28)    // beat-grid: 6.28s
+        .call(() => document.getElementById('sel-hook').classList.add('selected'), [], 6.28)
+
+        // Button appears then pulses
+        .to("#btn-gen", { opacity: 1, duration: 0.3, ease: "power2.out" }, 6.82)
+        .to("#btn-gen", { scale: 0.97, duration: 0.1, yoyo: true, repeat: 1, ease: "power1.inOut" }, 7.79); // beat: 7.79s — simulated click
+
+      /* ─────────────────────────────────────────────
+         SCENE 3 — Pipeline  (9→15s)
+         Stage rows appear then tick to complete
+         Each stage: appear at Ns, tick at N+0.4s
+         Beat-grid ~0.55s per stage starting 9.83s
+         Cost counter ticks from $0 to $4.12
+         ───────────────────────────────────────── */
+      tl.to("#scene-progress", { opacity: 1, duration: 0.3, ease: "power2.out" }, 9.1)
+
+        // Stage 1 — 9.83s beat
+        .to("#s1", { opacity: 1, y: 0, duration: 0.25, ease: "power2.out" }, 9.83) // beat-grid: 9.83s
+        .call(() => completeStage('s1', '0.3s', '$0.18'), [], 10.20)
+
+        // Stage 2 — 10.38s beat
+        .to("#s2", { opacity: 1, y: 0, duration: 0.25, ease: "power2.out" }, 10.38) // beat-grid: 10.38s
+        .call(() => completeStage('s2', '1.2s', '$0.00'), [], 10.75)
+
+        // Stage 3 — 10.93s beat
+        .to("#s3", { opacity: 1, y: 0, duration: 0.25, ease: "power2.out" }, 10.93) // beat-grid: 10.93s
+        .call(() => completeStage('s3', '2m 14s', '$3.62'), [], 11.90)
+
+        // Stage 4 — 12.02s beat
+        .to("#s4", { opacity: 1, y: 0, duration: 0.25, ease: "power2.out" }, 12.02) // beat-grid: 12.02s
+        .call(() => completeStage('s4', '0.8s', '$0.00'), [], 12.56)
+
+        // Stage 5 — 13.11s beat
+        .to("#s5", { opacity: 1, y: 0, duration: 0.25, ease: "power2.out" }, 13.11) // beat-grid: 13.11s
+        .call(() => completeStage('s5', '0.2s', '$0.32'), [], 13.64)
+
+        // Cost counter tick up — beat-locked strong cue 15.82s
+        .call(() => animateCost(), [], 10.93);
+
+      /* ─────────────────────────────────────────────
+         SCENE 4 — Output  (15→20s)
+         Video card slides in at 15.28s (beat)
+         Format badges pop: beat-locked 20.19s strong cue
+         Cost + meta cards appear 15.82s
+         ───────────────────────────────────────── */
+      tl.to("#scene-output", { opacity: 1, duration: 0.3, ease: "power2.out" }, 15.1)
+        .fromTo("#vid-card",  { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 15.28)  // beat: 15.28s
+        .fromTo("#cost-card", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 15.82)  // beat: 15.82s
+        .fromTo("#meta-card", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 16.38)  // beat: 16.38s
+
+        // Format badges pop in
+        .to("#b1", { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, 18.55)
+        .to("#b2", { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, 19.10)
+        .to("#b3", { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, 19.64)
+
+        // Stats zoom — pan + scale toward cost/meta cards at 17.5s
+        .to("#scene-output", {
+          scale: 1.35,
+          x: -210,
+          transformOrigin: "center center",
+          duration: 0.75,
+          ease: "power2.inOut"
+        }, 17.5);
+
+      /* ─────────────────────────────────────────────
+         SCENE 5 — Phone showcase  (20→26s)
+         ───────────────────────────────────────── */
+      tl.to("#scene-phone",    { opacity: 1, duration: 0.4, ease: "power2.out" }, 20.05)
+        .fromTo("#phone-mockup", { y: 70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power3.out" }, 20.1)
+        .to("#phone-caption",  { opacity: 1, duration: 0.55, ease: "power2.out" }, 21.0);
+
+      /* ─────────────────────────────────────────────
+         SCENE 6 — Logo  (26→28s)
+         ───────────────────────────────────────── */
+      tl.to("#scene-logo", { opacity: 1, duration: 0.4, ease: "power2.out" }, 26.1)
+        .fromTo("#logo-wm", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 26.19)
+        .to("#logo-tag",  { opacity: 1, duration: 0.4, ease: "power2.out" }, 26.74)
+        .to("#logo-cred", { opacity: 1, duration: 0.4, ease: "power2.out" }, 27.28)
+
+        // Music fade out over last 1.5s
+        .to("#bgm", { volume: 0, duration: 1.5, ease: "power1.in" }, 26.5);
+
+      window.__timelines["main"] = tl;
+
+      /* ─────────────────────────────────────────────
+         Helpers
+         ───────────────────────────────────────── */
+      function completeStage(id, duration, cost) {
+        const row   = document.getElementById(id);
+        const icon  = document.getElementById(id + '-icon');
+        const meta  = document.getElementById(id + '-meta');
+        if (!row || !icon || !meta) return;
+        icon.className = 'stage-icon done';
+        icon.textContent = '✓';
+        row.classList.add('done-row');
+        meta.textContent = duration + ' · ' + cost;
+        gsap.from(icon, { scale: 0.5, duration: 0.25, ease: "back.out(2)" });
+      }
+
+      function animateCost() {
+        const el = document.getElementById('cost-val');
+        if (!el) return;
+        const obj = { val: 0 };
+        gsap.to(obj, {
+          val: 4.12,
+          duration: 3.5,
+          ease: "power1.inOut",
+          onUpdate: () => { el.textContent = '$' + obj.val.toFixed(2); }
+        });
+      }
+    </script>
+  </body>
+</html>
